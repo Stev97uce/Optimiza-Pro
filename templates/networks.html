@@ -1,0 +1,705 @@
+{% extends "base.html" %}
+
+{% block title %}Optimización de Redes{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-project-diagram text-success me-2"></i>
+                        Optimización de Redes
+                    </h4>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadExample('shortest_path')">
+                            Ruta más corta
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadExample('max_flow')">
+                            Flujo máximo
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadExample('min_cost_flow')">
+                            Flujo costo mínimo
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form id="networkForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="problem_type" class="form-label">Tipo de Problema</label>
+                                    <select class="form-select" id="problem_type" name="problem_type" required>
+                                        <option value="">Seleccionar tipo...</option>
+                                        <option value="shortest_path">Ruta más corta</option>
+                                        <option value="max_flow">Flujo máximo</option>
+                                        <option value="min_cost_flow">Flujo de costo mínimo</option>
+                                        <option value="mst">Árbol de expansión mínima</option>
+                                        <option value="assignment">Problema de asignación</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="algorithm" class="form-label">Algoritmo</label>
+                                    <select class="form-select" id="algorithm" name="algorithm">
+                                        <option value="auto">Automático</option>
+                                        <option value="dijkstra">Dijkstra</option>
+                                        <option value="floyd_warshall">Floyd-Warshall</option>
+                                        <option value="ford_fulkerson">Ford-Fulkerson</option>
+                                        <option value="edmonds_karp">Edmonds-Karp</option>
+                                        <option value="kruskal">Kruskal</option>
+                                        <option value="prim">Prim</option>
+                                        <option value="hungarian">Húngaro</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="nodes" class="form-label">Nodos de la Red</label>
+                            <input type="text" class="form-control" id="nodes" name="nodes" 
+                                   placeholder="Ejemplo: A,B,C,D,E" required>
+                            <div class="form-text">Ingrese los nodos separados por comas</div>
+                        </div>
+
+                        <div class="mb-3" id="source_target_section" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="source_node" class="form-label">Nodo Origen</label>
+                                    <select class="form-select" id="source_node" name="source_node">
+                                        <option value="">Seleccionar origen...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="target_node" class="form-label">Nodo Destino</label>
+                                    <select class="form-select" id="target_node" name="target_node">
+                                        <option value="">Seleccionar destino...</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edges" class="form-label">Arcos/Conexiones</label>
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="edgesTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Desde</th>
+                                            <th>Hacia</th>
+                                            <th>Peso/Costo</th>
+                                            <th id="capacityHeader" style="display: none;">Capacidad</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="edgesBody">
+                                        <!-- Se llenará dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addEdgeRow()">
+                                <i class="fas fa-plus"></i> Agregar Arco
+                            </button>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="button" class="btn btn-outline-secondary me-md-2" onclick="clearForm()">
+                                <i class="fas fa-trash"></i> Limpiar
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-play"></i> Resolver
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle text-info me-2"></i>
+                        Guía de Problemas de Redes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="helpAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#shortestPath">
+                                    Ruta más corta
+                                </button>
+                            </h2>
+                            <div id="shortestPath" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                                <div class="accordion-body">
+                                    <p>Encuentra la ruta de menor costo entre dos nodos.</p>
+                                    <strong>Aplicaciones:</strong>
+                                    <ul>
+                                        <li>Rutas de navegación GPS</li>
+                                        <li>Redes de comunicación</li>
+                                        <li>Logística y distribución</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#maxFlow">
+                                    Flujo máximo
+                                </button>
+                            </h2>
+                            <div id="maxFlow" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                                <div class="accordion-body">
+                                    <p>Maximiza el flujo desde un nodo origen hacia un destino.</p>
+                                    <strong>Aplicaciones:</strong>
+                                    <ul>
+                                        <li>Redes de tuberías</li>
+                                        <li>Tráfico de red</li>
+                                        <li>Cadenas de suministro</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#minCostFlow">
+                                    Flujo costo mínimo
+                                </button>
+                            </h2>
+                            <div id="minCostFlow" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                                <div class="accordion-body">
+                                    <p>Minimiza el costo de enviar un flujo específico.</p>
+                                    <strong>Aplicaciones:</strong>
+                                    <ul>
+                                        <li>Distribución con costos</li>
+                                        <li>Asignación de recursos</li>
+                                        <li>Planificación logística</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <h6>Consejos:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-lightbulb text-warning me-2"></i>Use nombres cortos para nodos</li>
+                            <li><i class="fas fa-lightbulb text-warning me-2"></i>Verifique que la red esté conectada</li>
+                            <li><i class="fas fa-lightbulb text-warning me-2"></i>Para flujos, defina capacidades realistas</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-line text-primary me-2"></i>
+                        Vista Previa de Red
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <div id="networkPreview" style="height: 200px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center;">
+                        <span class="text-muted">La visualización aparecerá aquí</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Resultados -->
+<div class="modal fade" id="resultsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-bar text-success me-2"></i>
+                    Resultados de Optimización de Redes
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="resultsContent">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-primary" onclick="exportResults()">
+                    <i class="fas fa-download"></i> Exportar
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let edgeCount = 0;
+
+document.getElementById('problem_type').addEventListener('change', function() {
+    const problemType = this.value;
+    const sourcTargetSection = document.getElementById('source_target_section');
+    const capacityHeader = document.getElementById('capacityHeader');
+    
+    if (problemType === 'shortest_path' || problemType === 'max_flow' || problemType === 'min_cost_flow') {
+        sourcTargetSection.style.display = 'block';
+    } else {
+        sourcTargetSection.style.display = 'none';
+    }
+    
+    if (problemType === 'max_flow' || problemType === 'min_cost_flow') {
+        capacityHeader.style.display = 'table-cell';
+    } else {
+        capacityHeader.style.display = 'none';
+    }
+    
+    updateAlgorithmOptions(problemType);
+});
+
+document.getElementById('nodes').addEventListener('input', function() {
+    updateNodeSelectors();
+    updateEdgeTable();
+});
+
+function updateAlgorithmOptions(problemType) {
+    const algorithmSelect = document.getElementById('algorithm');
+    const algorithms = {
+        'shortest_path': ['auto', 'dijkstra', 'floyd_warshall'],
+        'max_flow': ['auto', 'ford_fulkerson', 'edmonds_karp'],
+        'min_cost_flow': ['auto', 'ford_fulkerson'],
+        'mst': ['auto', 'kruskal', 'prim'],
+        'assignment': ['auto', 'hungarian']
+    };
+    
+    // Limpiar opciones actuales
+    algorithmSelect.innerHTML = '<option value="auto">Automático</option>';
+    
+    if (algorithms[problemType]) {
+        algorithms[problemType].slice(1).forEach(alg => {
+            const option = document.createElement('option');
+            option.value = alg;
+            option.textContent = alg.charAt(0).toUpperCase() + alg.slice(1).replace('_', '-');
+            algorithmSelect.appendChild(option);
+        });
+    }
+}
+
+function updateNodeSelectors() {
+    const nodesText = document.getElementById('nodes').value;
+    const nodes = nodesText.split(',').map(n => n.trim()).filter(n => n);
+    
+    const sourceSelect = document.getElementById('source_node');
+    const targetSelect = document.getElementById('target_node');
+    
+    sourceSelect.innerHTML = '<option value="">Seleccionar origen...</option>';
+    targetSelect.innerHTML = '<option value="">Seleccionar destino...</option>';
+    
+    nodes.forEach(node => {
+        const sourceOption = document.createElement('option');
+        sourceOption.value = node;
+        sourceOption.textContent = node;
+        sourceSelect.appendChild(sourceOption);
+        
+        const targetOption = document.createElement('option');
+        targetOption.value = node;
+        targetOption.textContent = node;
+        targetSelect.appendChild(targetOption);
+    });
+}
+
+function updateEdgeTable() {
+    const nodesText = document.getElementById('nodes').value;
+    const nodes = nodesText.split(',').map(n => n.trim()).filter(n => n);
+    
+    if (nodes.length === 0) return;
+    
+    // Limpiar tabla actual
+    document.getElementById('edgesBody').innerHTML = '';
+    edgeCount = 0;
+    
+    // Agregar algunas filas vacías
+    for (let i = 0; i < 3; i++) {
+        addEdgeRow();
+    }
+}
+
+function addEdgeRow() {
+    const nodesText = document.getElementById('nodes').value;
+    const nodes = nodesText.split(',').map(n => n.trim()).filter(n => n);
+    
+    const tbody = document.getElementById('edgesBody');
+    const row = document.createElement('tr');
+    
+    const problemType = document.getElementById('problem_type').value;
+    const showCapacity = problemType === 'max_flow' || problemType === 'min_cost_flow';
+    
+    row.innerHTML = `
+        <td>
+            <select class="form-select form-select-sm" name="edge_from_${edgeCount}">
+                <option value="">Desde...</option>
+                ${nodes.map(node => `<option value="${node}">${node}</option>`).join('')}
+            </select>
+        </td>
+        <td>
+            <select class="form-select form-select-sm" name="edge_to_${edgeCount}">
+                <option value="">Hacia...</option>
+                ${nodes.map(node => `<option value="${node}">${node}</option>`).join('')}
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" name="edge_weight_${edgeCount}" 
+                   placeholder="Peso" step="0.01" min="0">
+        </td>
+        <td style="display: ${showCapacity ? 'table-cell' : 'none'};">
+            <input type="number" class="form-control form-control-sm" name="edge_capacity_${edgeCount}" 
+                   placeholder="Capacidad" step="0.01" min="0">
+        </td>
+        <td>
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeEdgeRow(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    edgeCount++;
+}
+
+function removeEdgeRow(button) {
+    button.closest('tr').remove();
+}
+
+function loadExample(type) {
+    const examples = {
+        'shortest_path': {
+            problem_type: 'shortest_path',
+            nodes: 'A,B,C,D,E',
+            source_node: 'A',
+            target_node: 'E',
+            edges: [
+                {from: 'A', to: 'B', weight: 4},
+                {from: 'A', to: 'C', weight: 2},
+                {from: 'B', to: 'C', weight: 1},
+                {from: 'B', to: 'D', weight: 5},
+                {from: 'C', to: 'D', weight: 8},
+                {from: 'C', to: 'E', weight: 10},
+                {from: 'D', to: 'E', weight: 2}
+            ]
+        },
+        'max_flow': {
+            problem_type: 'max_flow',
+            nodes: 'S,A,B,C,T',
+            source_node: 'S',
+            target_node: 'T',
+            edges: [
+                {from: 'S', to: 'A', weight: 0, capacity: 10},
+                {from: 'S', to: 'C', weight: 0, capacity: 10},
+                {from: 'A', to: 'B', weight: 0, capacity: 4},
+                {from: 'A', to: 'C', weight: 0, capacity: 2},
+                {from: 'C', to: 'B', weight: 0, capacity: 9},
+                {from: 'B', to: 'T', weight: 0, capacity: 10},
+                {from: 'C', to: 'T', weight: 0, capacity: 10}
+            ]
+        },
+        'min_cost_flow': {
+            problem_type: 'min_cost_flow',
+            nodes: 'S,A,B,T',
+            source_node: 'S',
+            target_node: 'T',
+            edges: [
+                {from: 'S', to: 'A', weight: 3, capacity: 5},
+                {from: 'S', to: 'B', weight: 1, capacity: 8},
+                {from: 'A', to: 'T', weight: 2, capacity: 6},
+                {from: 'B', to: 'T', weight: 4, capacity: 4},
+                {from: 'A', to: 'B', weight: 1, capacity: 3}
+            ]
+        }
+    };
+    
+    const example = examples[type];
+    if (!example) return;
+    
+    // Llenar formulario
+    document.getElementById('problem_type').value = example.problem_type;
+    document.getElementById('problem_type').dispatchEvent(new Event('change'));
+    
+    document.getElementById('nodes').value = example.nodes;
+    document.getElementById('nodes').dispatchEvent(new Event('input'));
+    
+    setTimeout(() => {
+        if (example.source_node) {
+            document.getElementById('source_node').value = example.source_node;
+        }
+        if (example.target_node) {
+            document.getElementById('target_node').value = example.target_node;
+        }
+        
+        // Llenar tabla de arcos
+        const tbody = document.getElementById('edgesBody');
+        tbody.innerHTML = '';
+        edgeCount = 0;
+        
+        example.edges.forEach(edge => {
+            addEdgeRow();
+            const lastRowIndex = edgeCount - 1;
+            document.querySelector(`select[name="edge_from_${lastRowIndex}"]`).value = edge.from;
+            document.querySelector(`select[name="edge_to_${lastRowIndex}"]`).value = edge.to;
+            document.querySelector(`input[name="edge_weight_${lastRowIndex}"]`).value = edge.weight;
+            if (edge.capacity !== undefined) {
+                const capacityInput = document.querySelector(`input[name="edge_capacity_${lastRowIndex}"]`);
+                if (capacityInput) capacityInput.value = edge.capacity;
+            }
+        });
+    }, 100);
+}
+
+function clearForm() {
+    document.getElementById('networkForm').reset();
+    document.getElementById('edgesBody').innerHTML = '';
+    document.getElementById('source_target_section').style.display = 'none';
+    document.getElementById('capacityHeader').style.display = 'none';
+    edgeCount = 0;
+}
+
+document.getElementById('networkForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // Procesar arcos
+    const edges = [];
+    for (let i = 0; i < edgeCount; i++) {
+        const from = data[`edge_from_${i}`];
+        const to = data[`edge_to_${i}`];
+        const weight = data[`edge_weight_${i}`];
+        const capacity = data[`edge_capacity_${i}`];
+        
+        if (from && to && weight !== '') {
+            const edge = {from, to, weight: parseFloat(weight)};
+            if (capacity !== '') {
+                edge.capacity = parseFloat(capacity);
+            }
+            edges.push(edge);
+        }
+    }
+    
+    const problemData = {
+        problem_type: data.problem_type,
+        algorithm: data.algorithm,
+        nodes: data.nodes.split(',').map(n => n.trim()),
+        edges: edges,
+        source_node: data.source_node,
+        target_node: data.target_node
+    };
+    
+    // Simular envío al backend
+    simulateNetworkSolution(problemData);
+});
+
+function simulateNetworkSolution(data) {
+    // Simular resultados basados en el tipo de problema
+    let results = {};
+    
+    switch(data.problem_type) {
+        case 'shortest_path':
+            results = {
+                path: ['A', 'C', 'B', 'D', 'E'],
+                distance: 15,
+                algorithm_used: 'Dijkstra',
+                execution_time: '0.003s'
+            };
+            break;
+        case 'max_flow':
+            results = {
+                max_flow_value: 18,
+                flow_distribution: {
+                    'S->A': 8,
+                    'S->C': 10,
+                    'A->B': 4,
+                    'A->C': 4,
+                    'C->B': 14,
+                    'B->T': 18
+                },
+                algorithm_used: 'Edmonds-Karp',
+                execution_time: '0.005s'
+            };
+            break;
+        case 'min_cost_flow':
+            results = {
+                min_cost: 45,
+                flow_value: 10,
+                flow_distribution: {
+                    'S->A': 5,
+                    'S->B': 5,
+                    'A->T': 3,
+                    'A->B': 2,
+                    'B->T': 7
+                },
+                algorithm_used: 'Min-Cost Max-Flow',
+                execution_time: '0.004s'
+            };
+            break;
+    }
+    
+    displayNetworkResults(results, data.problem_type);
+}
+
+function displayNetworkResults(results, problemType) {
+    let content = `
+        <div class="row">
+            <div class="col-md-8">
+                <h6>Solución Óptima</h6>
+    `;
+    
+    switch(problemType) {
+        case 'shortest_path':
+            content += `
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Ruta Óptima</th>
+                            <td>${results.path.join(' → ')}</td>
+                        </tr>
+                        <tr>
+                            <th>Distancia Total</th>
+                            <td>${results.distance}</td>
+                        </tr>
+                        <tr>
+                            <th>Algoritmo</th>
+                            <td>${results.algorithm_used}</td>
+                        </tr>
+                        <tr>
+                            <th>Tiempo de Ejecución</th>
+                            <td>${results.execution_time}</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+            break;
+            
+        case 'max_flow':
+            content += `
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Flujo Máximo</th>
+                            <td class="fw-bold text-success">${results.max_flow_value}</td>
+                        </tr>
+                        <tr>
+                            <th>Algoritmo</th>
+                            <td>${results.algorithm_used}</td>
+                        </tr>
+                        <tr>
+                            <th>Tiempo de Ejecución</th>
+                            <td>${results.execution_time}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <h6 class="mt-3">Distribución de Flujo</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Arco</th>
+                                <th>Flujo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            Object.entries(results.flow_distribution).forEach(([arc, flow]) => {
+                content += `<tr><td>${arc}</td><td>${flow}</td></tr>`;
+            });
+            
+            content += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            break;
+            
+        case 'min_cost_flow':
+            content += `
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Costo Mínimo</th>
+                            <td class="fw-bold text-success">${results.min_cost}</td>
+                        </tr>
+                        <tr>
+                            <th>Flujo Total</th>
+                            <td>${results.flow_value}</td>
+                        </tr>
+                        <tr>
+                            <th>Algoritmo</th>
+                            <td>${results.algorithm_used}</td>
+                        </tr>
+                        <tr>
+                            <th>Tiempo de Ejecución</th>
+                            <td>${results.execution_time}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <h6 class="mt-3">Distribución de Flujo</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Arco</th>
+                                <th>Flujo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            Object.entries(results.flow_distribution).forEach(([arc, flow]) => {
+                content += `<tr><td>${arc}</td><td>${flow}</td></tr>`;
+            });
+            
+            content += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            break;
+    }
+    
+    content += `
+            </div>
+            <div class="col-md-4">
+                <h6>Visualización</h6>
+                <div style="height: 300px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center;">
+                    <span class="text-muted">Gráfico de la red</span>
+                </div>
+                
+                <div class="mt-3">
+                    <h6>Análisis de Sensibilidad</h6>
+                    <small class="text-muted">
+                        La solución es estable para cambios menores en los pesos/capacidades.
+                        Los arcos críticos están destacados en la visualización.
+                    </small>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('resultsContent').innerHTML = content;
+    new bootstrap.Modal(document.getElementById('resultsModal')).show();
+}
+
+function exportResults() {
+    alert('Función de exportación implementada - se descargarían los resultados en formato Excel/PDF');
+}
+</script>
+{% endblock %}

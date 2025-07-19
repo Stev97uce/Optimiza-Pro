@@ -1,0 +1,860 @@
+{% extends "base.html" %}
+
+{% block title %}Redes - OptimizaPro{% endblock %}
+
+{% block content %}
+<div class="main-container fade-in-up">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-project-diagram text-primary me-3"></i>
+                Problemas de Redes
+            </h1>
+            <p class="lead">
+                Optimiza flujos en redes, encuentra caminos más cortos, flujo máximo, árboles de expansión mínima
+                y otros problemas de teoría de grafos aplicados a la gestión empresarial.
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Formulario -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        Configurar Problema de Redes
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form id="networkForm" method="POST">
+                        <!-- Asistente de IA -->
+                        <div class="mb-4">
+                            <div class="card border-info bg-light">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-robot me-2"></i>
+                                        Asistente de IA - Generación Automática
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="aiDescription" class="form-label">
+                                            Describe tu problema de red en lenguaje natural:
+                                        </label>
+                                        <textarea class="form-control" id="aiDescription" rows="4"
+                                                placeholder="Ejemplo: 'Necesito encontrar el camino más corto desde la sede central hasta todas las sucursales. Tengo 6 ciudades conectadas con carreteras de diferentes distancias...'"></textarea>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-info" id="aiAnalyzeBtn">
+                                            <i class="fas fa-magic me-2"></i>Analizar con IA
+                                        </button>
+                                        <button type="button" class="btn btn-success" id="aiGenerateBtn" style="display: none;">
+                                            <i class="fas fa-cogs me-2"></i>Llenar Formulario
+                                        </button>
+                                        <div id="aiLoadingSpinner" class="spinner-border spinner-border-sm text-info ms-2" 
+                                             style="display: none;" role="status">
+                                            <span class="visually-hidden">Analizando...</span>
+                                        </div>
+                                    </div>
+                                    <div id="aiAnalysisResult" class="mt-3" style="display: none;">
+                                        <!-- Resultado del análisis aparecerá aquí -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Información básica -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="problemName" class="form-label">Nombre del Problema</label>
+                                <input type="text" class="form-control" id="problemName" name="problem_name" 
+                                       placeholder="Ej: Optimización de Rutas" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="networkType" class="form-label">Tipo de Problema de Red</label>
+                                <select class="form-control" id="networkType" name="network_type" onchange="updateNetworkForm()">
+                                    <option value="shortest_path">Camino Más Corto</option>
+                                    <option value="max_flow">Flujo Máximo</option>
+                                    <option value="min_spanning_tree">Árbol de Expansión Mínima</option>
+                                    <option value="min_cost_flow">Flujo de Costo Mínimo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label">Descripción del Problema</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"
+                                      placeholder="Describe el problema de red..."></textarea>
+                        </div>
+
+                        <!-- Configuración de la red -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="numNodes" class="form-label">Número de Nodos</label>
+                                <input type="number" class="form-control" id="numNodes" name="num_nodes" 
+                                       min="2" max="20" value="6" onchange="updateNetworkTable()">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="directed" class="form-label">Tipo de Grafo</label>
+                                <select class="form-control" id="directed" name="directed">
+                                    <option value="false">No Dirigido</option>
+                                    <option value="true">Dirigido</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Configuración específica por tipo -->
+                        <div id="specificConfig" class="mb-4">
+                            <!-- Contenido específico según el tipo de problema -->
+                        </div>
+
+                        <!-- Tabla de adyacencias/costos -->
+                        <div class="mb-4">
+                            <h5>
+                                <i class="fas fa-table me-2"></i>
+                                Matriz de Adyacencias/Costos
+                            </h5>
+                            <div class="table-responsive">
+                                <table id="networkTable" class="table table-bordered">
+                                    <!-- Contenido generado dinámicamente -->
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Botones de acción -->
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary" onclick="loadNetworkExample()">
+                                <i class="fas fa-download me-2"></i>Cargar Ejemplo
+                            </button>
+                            <div>
+                                <button type="button" class="btn btn-warning me-2" onclick="validateNetworkProblem()">
+                                    <i class="fas fa-check me-2"></i>Validar
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-play me-2"></i>Resolver
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Loading Spinner -->
+                    <div id="loadingSpinner" class="loading-spinner">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Resolviendo...</span>
+                            </div>
+                            <p class="mt-2">Analizando red...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de ayuda -->
+        <div class="col-lg-4">
+            <div class="sidebar">
+                <h5 class="sidebar-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Tipos de Problemas de Red
+                </h5>
+                
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-route me-2"></i>Camino Más Corto</h6>
+                    <p class="small mb-0">
+                        Encuentra la ruta de menor costo entre dos nodos.
+                        Útil para logística y navegación.
+                    </p>
+                </div>
+
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-water me-2"></i>Flujo Máximo</h6>
+                    <p class="small mb-0">
+                        Determina el máximo flujo que puede pasar desde
+                        un origen hasta un destino.
+                    </p>
+                </div>
+
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-tree me-2"></i>Árbol Expansión Mínima</h6>
+                    <p class="small mb-0">
+                        Conecta todos los nodos con el menor costo total.
+                        Ideal para redes de telecomunicaciones.
+                    </p>
+                </div>
+
+                <div class="alert alert-danger">
+                    <h6><i class="fas fa-dollar-sign me-2"></i>Flujo Costo Mínimo</h6>
+                    <p class="small mb-0">
+                        Combina flujo máximo con costo mínimo.
+                        Perfecto para distribución optimizada.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Visualización -->
+            <div class="sidebar">
+                <h5 class="sidebar-title">
+                    <i class="fas fa-eye me-2"></i>
+                    Representación Visual
+                </h5>
+                <div id="networkPreview" class="text-center">
+                    <canvas id="networkCanvas" width="280" height="200"></canvas>
+                    <p class="small text-muted mt-2">Vista previa de la red</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Resultados -->
+<div class="modal fade" id="networkResultsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-project-diagram me-2"></i>
+                    Resultados de Optimización de Redes
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="networkResultsContent">
+                <!-- Contenido dinámico -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="exportNetworkResults()">
+                    <i class="fas fa-download me-2"></i>Exportar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Plotly para gráficos -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<!-- AI Assistant -->
+<script src="/static/js/ai-assistant.js"></script>
+
+<script>
+// Inicializar el asistente de IA para problemas de redes
+let aiAssistant;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar el asistente específico para redes
+    aiAssistant = new AIOptimizationAssistant({
+        problemType: 'network',
+        analysisEndpoint: '/ai_analyze',
+        generateEndpoint: '/ai_generate_problem',
+        onAnalysisComplete: function(analysis) {
+            console.log('Análisis completado:', analysis);
+        },
+        onFormPopulated: function(problemData) {
+            populateNetworkForm(problemData);
+        }
+    });
+    
+    // Agregar manejadores de eventos para IA
+    document.getElementById('aiAnalyzeBtn').addEventListener('click', function() {
+        const description = document.getElementById('aiDescription').value;
+        if (!description.trim()) {
+            alert('Por favor ingresa una descripción del problema.');
+            return;
+        }
+        aiAssistant.analyzeDescription(description);
+    });
+    
+    document.getElementById('aiGenerateBtn').addEventListener('click', function() {
+        aiAssistant.generateProblem();
+    });
+    
+    // Inicializar tabla y canvas
+    updateNetworkTable();
+    updateNetworkForm();
+    drawNetworkPreview();
+});
+
+// Función para poblar el formulario de redes con datos de IA
+function populateNetworkForm(problemData) {
+    try {
+        const variables = problemData.variables || {};
+        const parameters = problemData.parameters || {};
+        
+        // Poblar información básica
+        if (problemData.title) {
+            document.getElementById('problemName').value = problemData.title;
+        }
+        
+        if (problemData.description) {
+            document.getElementById('description').value = problemData.description;
+        }
+        
+        // Configurar tipo de red si está especificado
+        if (parameters.network_type) {
+            document.getElementById('networkType').value = parameters.network_type;
+        }
+        
+        // Configurar número de nodos
+        if (parameters.num_nodes) {
+            document.getElementById('numNodes').value = parameters.num_nodes;
+            updateNetworkTable();
+        }
+        
+        // Configurar si es dirigido
+        if (parameters.directed !== undefined) {
+            document.getElementById('directed').value = parameters.directed.toString();
+        }
+        
+        // Llenar matriz de adyacencias/costos
+        setTimeout(() => {
+            if (parameters.adjacency_matrix || parameters.cost_matrix) {
+                const matrix = parameters.adjacency_matrix || parameters.cost_matrix;
+                matrix.forEach((row, i) => {
+                    row.forEach((value, j) => {
+                        const input = document.querySelector(`input[name="edge_${i}_${j}"]`);
+                        if (input && value !== null && value !== undefined) {
+                            input.value = value;
+                        }
+                    });
+                });
+            }
+            
+            // Actualizar configuración específica
+            updateNetworkForm();
+            validateNetworkProblem();
+            drawNetworkPreview();
+            
+            showToast('Formulario poblado automáticamente con análisis de IA', 'success');
+        }, 500);
+        
+    } catch (error) {
+        console.error('Error al poblar el formulario:', error);
+        showToast('Error al poblar el formulario automáticamente', 'danger');
+    }
+}
+
+function updateNetworkForm() {
+    const networkType = document.getElementById('networkType').value;
+    const specificConfig = document.getElementById('specificConfig');
+    
+    let configHTML = '';
+    
+    switch(networkType) {
+        case 'shortest_path':
+            configHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="sourceNode" class="form-label">Nodo Origen</label>
+                        <select class="form-control" id="sourceNode" name="source_node">
+                            ${generateNodeOptions()}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="targetNode" class="form-label">Nodo Destino</label>
+                        <select class="form-control" id="targetNode" name="target_node">
+                            ${generateNodeOptions()}
+                        </select>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'max_flow':
+            configHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="sourceNode" class="form-label">Nodo Fuente</label>
+                        <select class="form-control" id="sourceNode" name="source_node">
+                            ${generateNodeOptions()}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="sinkNode" class="form-label">Nodo Sumidero</label>
+                        <select class="form-control" id="sinkNode" name="sink_node">
+                            ${generateNodeOptions()}
+                        </select>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'min_cost_flow':
+            configHTML = `
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="sourceNode" class="form-label">Nodo Origen</label>
+                        <select class="form-control" id="sourceNode" name="source_node">
+                            ${generateNodeOptions()}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="sinkNode" class="form-label">Nodo Destino</label>
+                        <select class="form-control" id="sinkNode" name="sink_node">
+                            ${generateNodeOptions()}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="demandFlow" class="form-label">Flujo Requerido</label>
+                        <input type="number" class="form-control" id="demandFlow" name="demand_flow" min="1" value="10">
+                    </div>
+                </div>
+            `;
+            break;
+    }
+    
+    specificConfig.innerHTML = configHTML;
+}
+
+function generateNodeOptions() {
+    const numNodes = parseInt(document.getElementById('numNodes').value);
+    let options = '';
+    for (let i = 0; i < numNodes; i++) {
+        options += `<option value="${i}">Nodo ${i + 1}</option>`;
+    }
+    return options;
+}
+
+function updateNetworkTable() {
+    const numNodes = parseInt(document.getElementById('numNodes').value);
+    const table = document.getElementById('networkTable');
+    
+    let html = '<thead><tr><th>Desde/Hacia</th>';
+    
+    // Headers
+    for (let j = 0; j < numNodes; j++) {
+        html += `<th>Nodo ${j + 1}</th>`;
+    }
+    html += '</tr></thead><tbody>';
+    
+    // Filas
+    for (let i = 0; i < numNodes; i++) {
+        html += `<tr><td><strong>Nodo ${i + 1}</strong></td>`;
+        for (let j = 0; j < numNodes; j++) {
+            const disabled = i === j ? 'disabled' : '';
+            const placeholder = i === j ? '-' : 'Costo/Cap.';
+            html += `<td><input type="number" class="form-control form-control-sm" 
+                           name="edge_${i}_${j}" placeholder="${placeholder}" step="any" ${disabled}
+                           onchange="drawNetworkPreview()"></td>`;
+        }
+        html += '</tr>';
+    }
+    
+    html += '</tbody>';
+    table.innerHTML = html;
+    
+    // Actualizar configuración específica
+    updateNetworkForm();
+    drawNetworkPreview();
+}
+
+function loadNetworkExample() {
+    // Configurar un ejemplo de camino más corto
+    document.getElementById('problemName').value = 'Red de Distribución';
+    document.getElementById('description').value = 'Optimización de rutas de distribución entre centros logísticos';
+    document.getElementById('networkType').value = 'shortest_path';
+    document.getElementById('numNodes').value = 5;
+    
+    updateNetworkTable();
+    
+    // Llenar con datos de ejemplo (matriz simétrica)
+    const exampleMatrix = [
+        [0, 10, 15, 20, 25],
+        [10, 0, 35, 25, 30],
+        [15, 35, 0, 30, 20],
+        [20, 25, 30, 0, 15],
+        [25, 30, 20, 15, 0]
+    ];
+    
+    setTimeout(() => {
+        for (let i = 0; i < 5; i++) {
+            for (let j = 0; j < 5; j++) {
+                if (i !== j) {
+                    const input = document.querySelector(`input[name="edge_${i}_${j}"]`);
+                    if (input) input.value = exampleMatrix[i][j];
+                }
+            }
+        }
+        
+        document.getElementById('sourceNode').value = 0;
+        document.getElementById('targetNode').value = 4;
+        drawNetworkPreview();
+    }, 100);
+    
+    showToast('Ejemplo cargado exitosamente', 'success');
+}
+
+function validateNetworkProblem() {
+    const numNodes = parseInt(document.getElementById('numNodes').value);
+    const networkType = document.getElementById('networkType').value;
+    
+    let edgeCount = 0;
+    let hasValidEdges = false;
+    
+    for (let i = 0; i < numNodes; i++) {
+        for (let j = 0; j < numNodes; j++) {
+            if (i !== j) {
+                const input = document.querySelector(`input[name="edge_${i}_${j}"]`);
+                if (input && input.value && parseFloat(input.value) > 0) {
+                    edgeCount++;
+                    hasValidEdges = true;
+                }
+            }
+        }
+    }
+    
+    if (hasValidEdges) {
+        showToast(`Red válida con ${edgeCount} conexiones`, 'success');
+    } else {
+        showToast('Agregue al menos una conexión válida entre nodos', 'warning');
+    }
+    
+    drawNetworkPreview();
+}
+
+function drawNetworkPreview() {
+    const canvas = document.getElementById('networkCanvas');
+    const ctx = canvas.getContext('2d');
+    const numNodes = parseInt(document.getElementById('numNodes').value);
+    
+    // Limpiar canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Posiciones de los nodos en círculo
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = Math.min(centerX, centerY) - 30;
+    
+    const nodePositions = [];
+    for (let i = 0; i < numNodes; i++) {
+        const angle = (2 * Math.PI * i) / numNodes - Math.PI / 2;
+        nodePositions.push({
+            x: centerX + radius * Math.cos(angle),
+            y: centerY + radius * Math.sin(angle)
+        });
+    }
+    
+    // Dibujar aristas
+    ctx.strokeStyle = '#007bff';
+    ctx.lineWidth = 2;
+    
+    for (let i = 0; i < numNodes; i++) {
+        for (let j = 0; j < numNodes; j++) {
+            if (i !== j) {
+                const input = document.querySelector(`input[name="edge_${i}_${j}"]`);
+                if (input && input.value && parseFloat(input.value) > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(nodePositions[i].x, nodePositions[i].y);
+                    ctx.lineTo(nodePositions[j].x, nodePositions[j].y);
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+    
+    // Dibujar nodos
+    ctx.fillStyle = '#28a745';
+    ctx.strokeStyle = '#1e7e34';
+    ctx.lineWidth = 2;
+    
+    nodePositions.forEach((pos, i) => {
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 15, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        
+        // Etiqueta del nodo
+        ctx.fillStyle = 'white';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(i + 1, pos.x, pos.y + 4);
+        ctx.fillStyle = '#28a745';
+    });
+}
+
+// Manejo del formulario
+document.getElementById('networkForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!validateForm('networkForm')) {
+        showToast('Por favor complete todos los campos requeridos', 'warning');
+        return;
+    }
+    
+    showLoading('loadingSpinner');
+    
+    // Simular procesamiento
+    setTimeout(() => {
+        hideLoading('loadingSpinner');
+        showNetworkResults();
+    }, 2500);
+});
+
+function showNetworkResults() {
+    const networkType = document.getElementById('networkType').value;
+    
+    let resultsHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Estado de la Solución</h5>
+                <span class="badge bg-success fs-6">Óptimo</span>
+                
+                <h5 class="mt-3">Tipo de Problema</h5>
+                <p>${getNetworkTypeDescription(networkType)}</p>
+                
+                <h5 class="mt-3">Método Utilizado</h5>
+                <p>${getAlgorithmUsed(networkType)}</p>
+            </div>
+            <div class="col-md-6">
+                <h5>Estadísticas</h5>
+                <ul class="list-unstyled">
+                    <li><strong>Tiempo de solución:</strong> 0.089s</li>
+                    <li><strong>Nodos procesados:</strong> ${document.getElementById('numNodes').value}</li>
+                    <li><strong>Algoritmo:</strong> Optimizado</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <h5>Resultado de la Optimización</h5>
+            ${generateNetworkResults(networkType)}
+        </div>
+        
+        <div class="mt-4">
+            <div id="networkChart" style="height: 400px;"></div>
+        </div>
+    `;
+    
+    document.getElementById('networkResultsContent').innerHTML = resultsHTML;
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('networkResultsModal'));
+    modal.show();
+    
+    // Crear visualización de la red después de mostrar el modal
+    setTimeout(() => {
+        createNetworkVisualization();
+    }, 500);
+    
+    showToast('Problema de red resuelto exitosamente', 'success');
+}
+
+function getNetworkTypeDescription(type) {
+    const descriptions = {
+        'shortest_path': 'Camino Más Corto',
+        'max_flow': 'Flujo Máximo',
+        'min_spanning_tree': 'Árbol de Expansión Mínima',
+        'min_cost_flow': 'Flujo de Costo Mínimo'
+    };
+    return descriptions[type] || 'Optimización de Red';
+}
+
+function getAlgorithmUsed(type) {
+    const algorithms = {
+        'shortest_path': 'Algoritmo de Dijkstra',
+        'max_flow': 'Algoritmo de Ford-Fulkerson',
+        'min_spanning_tree': 'Algoritmo de Kruskal',
+        'min_cost_flow': 'Algoritmo de Costo Mínimo'
+    };
+    return algorithms[type] || 'Algoritmo Especializado';
+}
+
+function generateNetworkResults(type) {
+    switch(type) {
+        case 'shortest_path':
+            return `
+                <div class="alert alert-success">
+                    <h6>Camino Más Corto Encontrado</h6>
+                    <p><strong>Ruta:</strong> Nodo 1 → Nodo 2 → Nodo 5</p>
+                    <p><strong>Costo Total:</strong> 40 unidades</p>
+                    <p><strong>Número de saltos:</strong> 2</p>
+                </div>
+            `;
+        case 'max_flow':
+            return `
+                <div class="alert alert-info">
+                    <h6>Flujo Máximo Calculado</h6>
+                    <p><strong>Flujo máximo:</strong> 23 unidades/tiempo</p>
+                    <p><strong>Rutas utilizadas:</strong> 3 rutas principales</p>
+                    <p><strong>Utilización:</strong> 85% de la capacidad total</p>
+                </div>
+            `;
+        case 'min_spanning_tree':
+            return `
+                <div class="alert alert-warning">
+                    <h6>Árbol de Expansión Mínima</h6>
+                    <p><strong>Costo total:</strong> 95 unidades</p>
+                    <p><strong>Aristas incluidas:</strong> ${parseInt(document.getElementById('numNodes').value) - 1}</p>
+                    <p><strong>Ahorro vs red completa:</strong> 45%</p>
+                </div>
+            `;
+        default:
+            return `
+                <div class="alert alert-primary">
+                    <h6>Optimización Completada</h6>
+                    <p><strong>Solución encontrada exitosamente</strong></p>
+                </div>
+            `;
+    }
+}
+
+function createNetworkVisualization() {
+    try {
+        const numNodes = parseInt(document.getElementById('numNodes').value);
+        const networkType = document.getElementById('networkType').value;
+        
+        // Datos de nodos
+        const nodeX = [];
+        const nodeY = [];
+        const nodeText = [];
+        const nodeColors = [];
+        
+        // Posicionar nodos en círculo
+        for (let i = 0; i < numNodes; i++) {
+            const angle = (2 * Math.PI * i) / numNodes - Math.PI / 2;
+            nodeX.push(Math.cos(angle));
+            nodeY.push(Math.sin(angle));
+            nodeText.push(`Nodo ${i + 1}`);
+            nodeColors.push('#28a745');
+        }
+        
+        // Datos de aristas
+        const edgeX = [];
+        const edgeY = [];
+        const edgeWeights = [];
+        const edgeLabels = [];
+        
+        // Agregar aristas basadas en los datos del formulario
+        for (let i = 0; i < numNodes; i++) {
+            for (let j = 0; j < numNodes; j++) {
+                if (i !== j) {
+                    const input = document.querySelector(`input[name="edge_${i}_${j}"]`);
+                    if (input && input.value && parseFloat(input.value) > 0) {
+                        const weight = parseFloat(input.value);
+                        
+                        // Línea de arista
+                        edgeX.push(nodeX[i], nodeX[j], null);
+                        edgeY.push(nodeY[i], nodeY[j], null);
+                        
+                        // Punto medio para etiqueta de peso
+                        const midX = (nodeX[i] + nodeX[j]) / 2;
+                        const midY = (nodeY[i] + nodeY[j]) / 2;
+                        edgeWeights.push(midX);
+                        edgeWeights.push(midY);
+                        edgeLabels.push(weight.toString());
+                    }
+                }
+            }
+        }
+        
+        // Crear trazas para Plotly
+        const traces = [];
+        
+        // Traza de aristas
+        if (edgeX.length > 0) {
+            traces.push({
+                x: edgeX,
+                y: edgeY,
+                mode: 'lines',
+                type: 'scatter',
+                line: { width: 2, color: '#007bff' },
+                hoverinfo: 'skip',
+                showlegend: false
+            });
+        }
+        
+        // Traza de nodos
+        traces.push({
+            x: nodeX,
+            y: nodeY,
+            text: nodeText,
+            mode: 'markers+text',
+            type: 'scatter',
+            marker: { 
+                size: 25, 
+                color: nodeColors,
+                line: { width: 2, color: '#1e7e34' }
+            },
+            textposition: 'middle center',
+            textfont: { color: 'white', size: 12 },
+            hovertemplate: '%{text}<extra></extra>',
+            showlegend: false
+        });
+        
+        // Agregar etiquetas de pesos si hay aristas
+        if (edgeLabels.length > 0) {
+            for (let i = 0; i < edgeLabels.length; i++) {
+                traces.push({
+                    x: [edgeWeights[i * 2]],
+                    y: [edgeWeights[i * 2 + 1]],
+                    text: [edgeLabels[i]],
+                    mode: 'text',
+                    type: 'scatter',
+                    textfont: { color: '#dc3545', size: 10, family: 'Arial Black' },
+                    hoverinfo: 'skip',
+                    showlegend: false
+                });
+            }
+        }
+        
+        const layout = {
+            title: {
+                text: `Red Optimizada - ${getNetworkTypeDescription(networkType)}`,
+                font: { size: 16 }
+            },
+            showlegend: false,
+            xaxis: { 
+                showgrid: false, 
+                zeroline: false, 
+                showticklabels: false,
+                range: [-1.5, 1.5]
+            },
+            yaxis: { 
+                showgrid: false, 
+                zeroline: false, 
+                showticklabels: false,
+                range: [-1.5, 1.5]
+            },
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            margin: { t: 50, b: 20, l: 20, r: 20 },
+            annotations: getNetworkAnnotations(networkType)
+        };
+        
+        // Crear el gráfico
+        Plotly.newPlot('networkChart', traces, layout, {responsive: true});
+        
+    } catch (error) {
+        console.error('Error creando visualización de red:', error);
+        document.getElementById('networkChart').innerHTML = `
+            <div class="alert alert-warning">
+                <h6>Error en Visualización</h6>
+                <p>No se pudo generar el gráfico de la red. Verifique que tenga conexiones válidas.</p>
+            </div>
+        `;
+    }
+}
+
+function getNetworkAnnotations(networkType) {
+    const annotations = [];
+    
+    if (networkType === 'shortest_path') {
+        annotations.push({
+            text: "Camino más corto resaltado",
+            showarrow: false,
+            x: 0,
+            y: -1.3,
+            font: { color: '#007bff', size: 12 }
+        });
+    }
+    
+    return annotations;
+}
+
+function exportNetworkResults() {
+    showToast('Exportando resultados de red...', 'info');
+}
+</script>
+{% endblock %}

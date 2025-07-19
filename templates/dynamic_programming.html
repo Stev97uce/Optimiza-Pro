@@ -1,0 +1,1148 @@
+{% extends "base.html" %}
+
+{% block title %}Programación Dinámica{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-sitemap text-info me-2"></i>
+                        Programación Dinámica
+                    </h4>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadExample('knapsack')">
+                            Mochila 0/1
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadExample('lcs')">
+                            Subsecuencia Común
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadExample('coin_change')">
+                            Cambio de Monedas
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form id="dynamicForm">
+                        <!-- Asistente de IA -->
+                        <div class="mb-4">
+                            <div class="card border-info bg-light">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-robot me-2"></i>
+                                        Asistente de IA - Generación Automática
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="aiDescription" class="form-label">
+                                            Describe tu problema de programación dinámica en lenguaje natural:
+                                        </label>
+                                        <textarea class="form-control" id="aiDescription" rows="4"
+                                                placeholder="Ejemplo: 'Tengo una mochila con capacidad de 50 kg y 4 objetos con diferentes pesos y valores. Necesito determinar qué objetos llevar para maximizar el valor total...'"></textarea>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-info" id="aiAnalyzeBtn">
+                                            <i class="fas fa-magic me-2"></i>Analizar con IA
+                                        </button>
+                                        <button type="button" class="btn btn-success" id="aiGenerateBtn" style="display: none;">
+                                            <i class="fas fa-cogs me-2"></i>Llenar Formulario
+                                        </button>
+                                        <div id="aiLoadingSpinner" class="spinner-border spinner-border-sm text-info ms-2" 
+                                             style="display: none;" role="status">
+                                            <span class="visually-hidden">Analizando...</span>
+                                        </div>
+                                    </div>
+                                    <div id="aiAnalysisResult" class="mt-3" style="display: none;">
+                                        <!-- Resultado del análisis aparecerá aquí -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="problem_type" class="form-label">Tipo de Problema</label>
+                                    <select class="form-select" id="problem_type" name="problem_type" required>
+                                        <option value="">Seleccionar problema...</option>
+                                        <option value="knapsack_01">Problema de la Mochila 0/1</option>
+                                        <option value="knapsack_unbounded">Mochila Ilimitada</option>
+                                        <option value="lcs">Subsecuencia Común más Larga (LCS)</option>
+                                        <option value="edit_distance">Distancia de Edición</option>
+                                        <option value="coin_change">Cambio de Monedas</option>
+                                        <option value="rod_cutting">Corte de Varillas</option>
+                                        <option value="matrix_chain">Multiplicación de Matrices</option>
+                                        <option value="lis">Subsecuencia Creciente más Larga</option>
+                                        <option value="palindrome">Subsecuencia Palindrómica</option>
+                                        <option value="subset_sum">Suma de Subconjuntos</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="optimization_type" class="form-label">Tipo de Optimización</label>
+                                    <select class="form-select" id="optimization_type" name="optimization_type">
+                                        <option value="maximize">Maximizar</option>
+                                        <option value="minimize">Minimizar</option>
+                                        <option value="count">Contar soluciones</option>
+                                        <option value="find">Encontrar solución</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Problema de la Mochila -->
+                        <div id="knapsack_section" style="display: none;">
+                            <h6 class="border-bottom pb-2 mb-3">Parámetros de la Mochila</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="capacity" class="form-label">Capacidad de la Mochila</label>
+                                        <input type="number" class="form-control" id="capacity" name="capacity" 
+                                               placeholder="Peso máximo" step="1" min="1">
+                                        <div class="form-text">Peso máximo que puede cargar la mochila</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="item_count" class="form-label">Número de Elementos</label>
+                                        <input type="number" class="form-control" id="item_count" name="item_count" 
+                                               placeholder="Cantidad de elementos" step="1" min="1" max="20">
+                                        <div class="form-text">Elementos disponibles para la mochila</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Elementos (Peso, Valor)</label>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered" id="itemsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Elemento</th>
+                                                <th>Peso</th>
+                                                <th>Valor</th>
+                                                <th>Valor/Peso</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="itemsBody">
+                                            <!-- Se llenará dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="generateRandomItems()">
+                                    <i class="fas fa-random"></i> Generar Aleatorio
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Problemas de Cadenas -->
+                        <div id="string_section" style="display: none;">
+                            <h6 class="border-bottom pb-2 mb-3">Parámetros de Cadenas</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="string1" class="form-label">Primera Cadena</label>
+                                        <input type="text" class="form-control" id="string1" name="string1" 
+                                               placeholder="Ejemplo: ABCDGH">
+                                        <div class="form-text">Primera secuencia para comparar</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="string2" class="form-label">Segunda Cadena</label>
+                                        <input type="text" class="form-control" id="string2" name="string2" 
+                                               placeholder="Ejemplo: AEDFHR">
+                                        <div class="form-text">Segunda secuencia para comparar</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Problema de Monedas -->
+                        <div id="coin_section" style="display: none;">
+                            <h6 class="border-bottom pb-2 mb-3">Parámetros de Monedas</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="target_amount" class="form-label">Cantidad Objetivo</label>
+                                        <input type="number" class="form-control" id="target_amount" name="target_amount" 
+                                               placeholder="Ejemplo: 11" step="1" min="1">
+                                        <div class="form-text">Cantidad total a formar</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="coin_denominations" class="form-label">Denominaciones</label>
+                                        <input type="text" class="form-control" id="coin_denominations" name="coin_denominations" 
+                                               placeholder="Ejemplo: 1,5,10,25" value="1,5,10,25">
+                                        <div class="form-text">Valores de monedas separados por comas</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Problema de Corte de Varillas -->
+                        <div id="rod_section" style="display: none;">
+                            <h6 class="border-bottom pb-2 mb-3">Parámetros de Corte de Varillas</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="rod_length" class="form-label">Longitud de la Varilla</label>
+                                        <input type="number" class="form-control" id="rod_length" name="rod_length" 
+                                               placeholder="Ejemplo: 8" step="1" min="1">
+                                        <div class="form-text">Longitud total de la varilla</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="price_list" class="form-label">Lista de Precios</label>
+                                        <input type="text" class="form-control" id="price_list" name="price_list" 
+                                               placeholder="Ejemplo: 1,5,8,9,10,17,17,20">
+                                        <div class="form-text">Precios por longitud (separados por comas)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Problema de Multiplicación de Matrices -->
+                        <div id="matrix_section" style="display: none;">
+                            <h6 class="border-bottom pb-2 mb-3">Parámetros de Matrices</h6>
+                            <div class="mb-3">
+                                <label for="matrix_dimensions" class="form-label">Dimensiones de Matrices</label>
+                                <input type="text" class="form-control" id="matrix_dimensions" name="matrix_dimensions" 
+                                       placeholder="Ejemplo: 1,2,3,4,5">
+                                <div class="form-text">Dimensiones de matrices en secuencia (p0×p1, p1×p2, ...)</div>
+                            </div>
+                        </div>
+
+                        <!-- Problema de Secuencias -->
+                        <div id="sequence_section" style="display: none;">
+                            <h6 class="border-bottom pb-2 mb-3">Parámetros de Secuencia</h6>
+                            <div class="mb-3">
+                                <label for="sequence" class="form-label">Secuencia de Números</label>
+                                <input type="text" class="form-control" id="sequence" name="sequence" 
+                                       placeholder="Ejemplo: 10,9,2,5,3,7,101,18">
+                                <div class="form-text">Números separados por comas</div>
+                            </div>
+                        </div>
+
+                        <!-- Suma de Subconjuntos -->
+                        <div id="subset_section" style="display: none;">
+                            <h6 class="border-bottom pb-2 mb-3">Parámetros de Suma</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="target_sum" class="form-label">Suma Objetivo</label>
+                                        <input type="number" class="form-control" id="target_sum" name="target_sum" 
+                                               placeholder="Ejemplo: 9" step="1">
+                                        <div class="form-text">Suma que se desea obtener</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="number_set" class="form-label">Conjunto de Números</label>
+                                        <input type="text" class="form-control" id="number_set" name="number_set" 
+                                               placeholder="Ejemplo: 3,34,4,12,5,2">
+                                        <div class="form-text">Números disponibles separados por comas</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="show_table" name="show_table" checked>
+                                <label class="form-check-label" for="show_table">
+                                    Mostrar tabla de programación dinámica
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="show_steps" name="show_steps" checked>
+                                <label class="form-check-label" for="show_steps">
+                                    Mostrar pasos de la solución
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="button" class="btn btn-outline-secondary me-md-2" onclick="clearForm()">
+                                <i class="fas fa-trash"></i> Limpiar
+                            </button>
+                            <button type="button" class="btn btn-outline-info me-md-2" onclick="validateInput()">
+                                <i class="fas fa-check"></i> Validar
+                            </button>
+                            <button type="submit" class="btn btn-info">
+                                <i class="fas fa-play"></i> Resolver
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle text-info me-2"></i>
+                        Guía de Programación Dinámica
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="helpAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#knapsackHelp">
+                                    Problema de la Mochila
+                                </button>
+                            </h2>
+                            <div id="knapsackHelp" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                                <div class="accordion-body">
+                                    <p>Seleccionar elementos para maximizar valor sin exceder capacidad.</p>
+                                    <strong>Fórmula de recurrencia:</strong>
+                                    <code>dp[i][w] = max(dp[i-1][w], dp[i-1][w-wi] + vi)</code>
+                                    <br><br>
+                                    <strong>Aplicaciones:</strong>
+                                    <ul>
+                                        <li>Asignación de recursos</li>
+                                        <li>Selección de inversiones</li>
+                                        <li>Optimización de carteras</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#lcsHelp">
+                                    Subsecuencia Común
+                                </button>
+                            </h2>
+                            <div id="lcsHelp" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                                <div class="accordion-body">
+                                    <p>Encuentra la subsecuencia más larga común a dos secuencias.</p>
+                                    <strong>Aplicaciones:</strong>
+                                    <ul>
+                                        <li>Comparación de ADN</li>
+                                        <li>Control de versiones</li>
+                                        <li>Detección de plagio</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#coinHelp">
+                                    Cambio de Monedas
+                                </button>
+                            </h2>
+                            <div id="coinHelp" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                                <div class="accordion-body">
+                                    <p>Encuentra el mínimo número de monedas para formar una cantidad.</p>
+                                    <strong>Aplicaciones:</strong>
+                                    <ul>
+                                        <li>Sistemas de pago</li>
+                                        <li>Optimización de cambio</li>
+                                        <li>Distribución de denominaciones</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <h6>Principios Clave:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>Subestructura óptima</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Subproblemas superpuestos</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Memoización</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Construcción bottom-up</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-area text-info me-2"></i>
+                        Complejidad del Algoritmo
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="complexityAnalysis">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-chart-area fa-3x mb-2"></i>
+                            <p>El análisis de complejidad aparecerá aquí</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Resultados -->
+<div class="modal fade" id="resultsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-bar text-info me-2"></i>
+                    Resultados de Programación Dinámica
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="resultsContent">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-primary" onclick="exportResults()">
+                    <i class="fas fa-download"></i> Exportar
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let itemCount = 0;
+
+document.getElementById('problem_type').addEventListener('change', function() {
+    const problemType = this.value;
+    
+    // Ocultar todas las secciones
+    document.getElementById('knapsack_section').style.display = 'none';
+    document.getElementById('string_section').style.display = 'none';
+    document.getElementById('coin_section').style.display = 'none';
+    document.getElementById('rod_section').style.display = 'none';
+    document.getElementById('matrix_section').style.display = 'none';
+    document.getElementById('sequence_section').style.display = 'none';
+    document.getElementById('subset_section').style.display = 'none';
+    
+    // Mostrar sección correspondiente
+    switch(problemType) {
+        case 'knapsack_01':
+        case 'knapsack_unbounded':
+            document.getElementById('knapsack_section').style.display = 'block';
+            updateOptimizationType('maximize');
+            break;
+        case 'lcs':
+        case 'edit_distance':
+            document.getElementById('string_section').style.display = 'block';
+            updateOptimizationType(problemType === 'lcs' ? 'maximize' : 'minimize');
+            break;
+        case 'coin_change':
+            document.getElementById('coin_section').style.display = 'block';
+            updateOptimizationType('minimize');
+            break;
+        case 'rod_cutting':
+            document.getElementById('rod_section').style.display = 'block';
+            updateOptimizationType('maximize');
+            break;
+        case 'matrix_chain':
+            document.getElementById('matrix_section').style.display = 'block';
+            updateOptimizationType('minimize');
+            break;
+        case 'lis':
+        case 'palindrome':
+            document.getElementById('sequence_section').style.display = 'block';
+            updateOptimizationType('maximize');
+            break;
+        case 'subset_sum':
+            document.getElementById('subset_section').style.display = 'block';
+            updateOptimizationType('find');
+            break;
+    }
+    
+    updateComplexityAnalysis(problemType);
+});
+
+document.getElementById('item_count').addEventListener('change', function() {
+    updateItemsTable();
+});
+
+function updateOptimizationType(type) {
+    document.getElementById('optimization_type').value = type;
+}
+
+function updateItemsTable() {
+    const count = parseInt(document.getElementById('item_count').value) || 0;
+    const tbody = document.getElementById('itemsBody');
+    tbody.innerHTML = '';
+    
+    for (let i = 0; i < count; i++) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>Elemento ${i + 1}</td>
+            <td>
+                <input type="number" class="form-control form-control-sm" name="weight_${i}" 
+                       placeholder="Peso" step="1" min="1" onchange="updateRatio(${i})">
+            </td>
+            <td>
+                <input type="number" class="form-control form-control-sm" name="value_${i}" 
+                       placeholder="Valor" step="1" min="1" onchange="updateRatio(${i})">
+            </td>
+            <td id="ratio_${i}" class="text-muted">-</td>
+        `;
+        tbody.appendChild(row);
+    }
+    itemCount = count;
+}
+
+function updateRatio(index) {
+    const weight = parseFloat(document.querySelector(`input[name="weight_${index}"]`).value) || 0;
+    const value = parseFloat(document.querySelector(`input[name="value_${index}"]`).value) || 0;
+    const ratio = weight > 0 ? (value / weight).toFixed(2) : '-';
+    document.getElementById(`ratio_${index}`).textContent = ratio;
+}
+
+function generateRandomItems() {
+    const count = parseInt(document.getElementById('item_count').value) || 5;
+    document.getElementById('item_count').value = count;
+    updateItemsTable();
+    
+    for (let i = 0; i < count; i++) {
+        const weight = Math.floor(Math.random() * 20) + 1;
+        const value = Math.floor(Math.random() * 50) + 1;
+        
+        document.querySelector(`input[name="weight_${i}"]`).value = weight;
+        document.querySelector(`input[name="value_${i}"]`).value = value;
+        updateRatio(i);
+    }
+}
+
+function updateComplexityAnalysis(problemType) {
+    const complexities = {
+        'knapsack_01': 'O(nW) tiempo, O(nW) espacio',
+        'knapsack_unbounded': 'O(nW) tiempo, O(W) espacio',
+        'lcs': 'O(mn) tiempo, O(mn) espacio',
+        'edit_distance': 'O(mn) tiempo, O(mn) espacio',
+        'coin_change': 'O(nA) tiempo, O(A) espacio',
+        'rod_cutting': 'O(n²) tiempo, O(n) espacio',
+        'matrix_chain': 'O(n³) tiempo, O(n²) espacio',
+        'lis': 'O(n²) o O(n log n) tiempo',
+        'palindrome': 'O(n²) tiempo, O(n²) espacio',
+        'subset_sum': 'O(nS) tiempo, O(S) espacio'
+    };
+    
+    const complexity = complexities[problemType] || 'Seleccione un problema';
+    
+    document.getElementById('complexityAnalysis').innerHTML = `
+        <div class="text-center">
+            <h6>Complejidad Computacional</h6>
+            <div class="bg-light p-3 rounded">
+                <strong>${complexity}</strong>
+            </div>
+            <small class="text-muted mt-2 d-block">
+                n = número de elementos, W = capacidad, m = longitud cadena 2, A = cantidad objetivo, S = suma objetivo
+            </small>
+        </div>
+    `;
+}
+
+function loadExample(type) {
+    const examples = {
+        'knapsack': {
+            problem_type: 'knapsack_01',
+            capacity: 15,
+            item_count: 4,
+            items: [
+                {weight: 10, value: 60},
+                {weight: 20, value: 100},
+                {weight: 30, value: 120},
+                {weight: 15, value: 80}
+            ]
+        },
+        'lcs': {
+            problem_type: 'lcs',
+            string1: 'ABCDGH',
+            string2: 'AEDFHR'
+        },
+        'coin_change': {
+            problem_type: 'coin_change',
+            target_amount: 11,
+            coin_denominations: '1,5,10,25'
+        }
+    };
+    
+    const example = examples[type];
+    if (!example) return;
+    
+    clearForm();
+    
+    document.getElementById('problem_type').value = example.problem_type;
+    document.getElementById('problem_type').dispatchEvent(new Event('change'));
+    
+    if (example.capacity) {
+        document.getElementById('capacity').value = example.capacity;
+        document.getElementById('item_count').value = example.item_count;
+        updateItemsTable();
+        
+        setTimeout(() => {
+            example.items.forEach((item, index) => {
+                document.querySelector(`input[name="weight_${index}"]`).value = item.weight;
+                document.querySelector(`input[name="value_${index}"]`).value = item.value;
+                updateRatio(index);
+            });
+        }, 100);
+    }
+    
+    if (example.string1) {
+        document.getElementById('string1').value = example.string1;
+        document.getElementById('string2').value = example.string2;
+    }
+    
+    if (example.target_amount) {
+        document.getElementById('target_amount').value = example.target_amount;
+        document.getElementById('coin_denominations').value = example.coin_denominations;
+    }
+}
+
+function clearForm() {
+    document.getElementById('dynamicForm').reset();
+    document.getElementById('itemsBody').innerHTML = '';
+    document.getElementById('knapsack_section').style.display = 'none';
+    document.getElementById('string_section').style.display = 'none';
+    document.getElementById('coin_section').style.display = 'none';
+    document.getElementById('rod_section').style.display = 'none';
+    document.getElementById('matrix_section').style.display = 'none';
+    document.getElementById('sequence_section').style.display = 'none';
+    document.getElementById('subset_section').style.display = 'none';
+    itemCount = 0;
+}
+
+function validateInput() {
+    const problemType = document.getElementById('problem_type').value;
+    
+    if (!problemType) {
+        alert('Por favor seleccione un tipo de problema');
+        return false;
+    }
+    
+    // Validaciones específicas por tipo de problema
+    switch(problemType) {
+        case 'knapsack_01':
+        case 'knapsack_unbounded':
+            const capacity = document.getElementById('capacity').value;
+            const itemCount = document.getElementById('item_count').value;
+            if (!capacity || !itemCount) {
+                alert('Por favor ingrese la capacidad y número de elementos');
+                return false;
+            }
+            break;
+        case 'lcs':
+        case 'edit_distance':
+            const string1 = document.getElementById('string1').value;
+            const string2 = document.getElementById('string2').value;
+            if (!string1 || !string2) {
+                alert('Por favor ingrese ambas cadenas');
+                return false;
+            }
+            break;
+        case 'coin_change':
+            const targetAmount = document.getElementById('target_amount').value;
+            const denominations = document.getElementById('coin_denominations').value;
+            if (!targetAmount || !denominations) {
+                alert('Por favor ingrese la cantidad objetivo y las denominaciones');
+                return false;
+            }
+            break;
+    }
+    
+    alert('Entrada válida ✓');
+    return true;
+}
+
+document.getElementById('dynamicForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!validateInput()) return;
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // Procesar datos específicos según el tipo de problema
+    const problemData = {
+        problem_type: data.problem_type,
+        optimization_type: data.optimization_type,
+        show_table: data.show_table === 'on',
+        show_steps: data.show_steps === 'on'
+    };
+    
+    switch(data.problem_type) {
+        case 'knapsack_01':
+        case 'knapsack_unbounded':
+            problemData.capacity = parseInt(data.capacity);
+            problemData.items = [];
+            for (let i = 0; i < itemCount; i++) {
+                const weight = parseInt(data[`weight_${i}`]);
+                const value = parseInt(data[`value_${i}`]);
+                if (weight && value) {
+                    problemData.items.push({weight, value});
+                }
+            }
+            break;
+        case 'lcs':
+        case 'edit_distance':
+            problemData.string1 = data.string1;
+            problemData.string2 = data.string2;
+            break;
+        case 'coin_change':
+            problemData.target_amount = parseInt(data.target_amount);
+            problemData.denominations = data.coin_denominations.split(',').map(x => parseInt(x.trim()));
+            break;
+        case 'rod_cutting':
+            problemData.rod_length = parseInt(data.rod_length);
+            problemData.prices = data.price_list.split(',').map(x => parseInt(x.trim()));
+            break;
+        case 'matrix_chain':
+            problemData.dimensions = data.matrix_dimensions.split(',').map(x => parseInt(x.trim()));
+            break;
+        case 'lis':
+        case 'palindrome':
+            problemData.sequence = data.sequence.split(',').map(x => parseInt(x.trim()));
+            break;
+        case 'subset_sum':
+            problemData.target_sum = parseInt(data.target_sum);
+            problemData.numbers = data.number_set.split(',').map(x => parseInt(x.trim()));
+            break;
+    }
+    
+    // Simular solución
+    simulateDynamicSolution(problemData);
+});
+
+function simulateDynamicSolution(data) {
+    let results = {};
+    
+    switch(data.problem_type) {
+        case 'knapsack_01':
+            results = {
+                optimal_value: 140,
+                optimal_weight: 35,
+                selected_items: [2, 4],
+                dp_table: generateKnapsackTable(data),
+                solution_steps: [
+                    'Inicializar tabla DP de tamaño (n+1) × (W+1)',
+                    'Para cada elemento i y capacidad w:',
+                    '  Si peso[i] <= w: dp[i][w] = max(dp[i-1][w], dp[i-1][w-peso[i]] + valor[i])',
+                    '  Sino: dp[i][w] = dp[i-1][w]',
+                    'Rastrear la solución desde dp[n][W] hacia atrás'
+                ],
+                time_complexity: 'O(nW)',
+                space_complexity: 'O(nW)'
+            };
+            break;
+            
+        case 'lcs':
+            results = {
+                lcs_length: 3,
+                lcs_string: 'ADH',
+                dp_table: generateLCSTable(data),
+                solution_steps: [
+                    'Crear tabla DP de tamaño (m+1) × (n+1)',
+                    'Si caracteres coinciden: dp[i][j] = dp[i-1][j-1] + 1',
+                    'Sino: dp[i][j] = max(dp[i-1][j], dp[i][j-1])',
+                    'Reconstruir LCS desde dp[m][n]'
+                ],
+                time_complexity: 'O(mn)',
+                space_complexity: 'O(mn)'
+            };
+            break;
+            
+        case 'coin_change':
+            results = {
+                min_coins: 2,
+                coin_combination: [10, 1],
+                dp_table: generateCoinChangeTable(data),
+                solution_steps: [
+                    'Inicializar dp[0] = 0, dp[i] = ∞ para i > 0',
+                    'Para cada cantidad i de 1 a target:',
+                    '  Para cada moneda coin:',
+                    '    Si coin <= i: dp[i] = min(dp[i], dp[i-coin] + 1)',
+                    'La respuesta está en dp[target]'
+                ],
+                time_complexity: 'O(nA)',
+                space_complexity: 'O(A)'
+            };
+            break;
+    }
+    
+    displayDynamicResults(results, data);
+}
+
+function generateKnapsackTable(data) {
+    // Simulación de tabla DP para mochila
+    return [
+        [0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 60],
+        [0, 0, 0, 100, 100, 100],
+        [0, 0, 0, 100, 100, 120],
+        [0, 0, 80, 100, 100, 140]
+    ];
+}
+
+function generateLCSTable(data) {
+    // Simulación de tabla DP para LCS
+    return [
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 2, 2, 2],
+        [0, 1, 1, 1, 2, 2, 2],
+        [0, 1, 1, 2, 2, 2, 2],
+        [0, 1, 1, 2, 2, 2, 2],
+        [0, 1, 1, 2, 2, 3, 3]
+    ];
+}
+
+function generateCoinChangeTable(data) {
+    // Simulación de tabla DP para cambio de monedas
+    return [0, 1, 2, 3, 4, 1, 2, 3, 4, 5, 1, 2];
+}
+
+function displayDynamicResults(results, data) {
+    let content = `
+        <div class="row">
+            <div class="col-md-8">
+                <h6>Solución Óptima</h6>
+    `;
+    
+    switch(data.problem_type) {
+        case 'knapsack_01':
+            content += `
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Valor Óptimo</th>
+                            <td class="fw-bold text-success">${results.optimal_value}</td>
+                        </tr>
+                        <tr>
+                            <th>Peso Total</th>
+                            <td>${results.optimal_weight}</td>
+                        </tr>
+                        <tr>
+                            <th>Elementos Seleccionados</th>
+                            <td>${results.selected_items.map(i => `Elemento ${i}`).join(', ')}</td>
+                        </tr>
+                        <tr>
+                            <th>Complejidad Temporal</th>
+                            <td>${results.time_complexity}</td>
+                        </tr>
+                        <tr>
+                            <th>Complejidad Espacial</th>
+                            <td>${results.space_complexity}</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+            break;
+            
+        case 'lcs':
+            content += `
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Longitud LCS</th>
+                            <td class="fw-bold text-success">${results.lcs_length}</td>
+                        </tr>
+                        <tr>
+                            <th>Subsecuencia Común</th>
+                            <td class="fw-bold">${results.lcs_string}</td>
+                        </tr>
+                        <tr>
+                            <th>Cadena 1</th>
+                            <td>${data.string1}</td>
+                        </tr>
+                        <tr>
+                            <th>Cadena 2</th>
+                            <td>${data.string2}</td>
+                        </tr>
+                        <tr>
+                            <th>Complejidad</th>
+                            <td>${results.time_complexity}</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+            break;
+            
+        case 'coin_change':
+            content += `
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Mínimo de Monedas</th>
+                            <td class="fw-bold text-success">${results.min_coins}</td>
+                        </tr>
+                        <tr>
+                            <th>Combinación Óptima</th>
+                            <td>${results.coin_combination.join(' + ')}</td>
+                        </tr>
+                        <tr>
+                            <th>Cantidad Objetivo</th>
+                            <td>${data.target_amount}</td>
+                        </tr>
+                        <tr>
+                            <th>Denominaciones</th>
+                            <td>${data.denominations.join(', ')}</td>
+                        </tr>
+                        <tr>
+                            <th>Complejidad</th>
+                            <td>${results.time_complexity}</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+            break;
+    }
+    
+    if (data.show_steps) {
+        content += `
+            <h6 class="mt-3">Pasos de la Solución</h6>
+            <ol class="list-group list-group-numbered">
+        `;
+        
+        results.solution_steps.forEach(step => {
+            content += `<li class="list-group-item">${step}</li>`;
+        });
+        
+        content += `</ol>`;
+    }
+    
+    if (data.show_table && results.dp_table) {
+        content += `
+            <h6 class="mt-3">Tabla de Programación Dinámica</h6>
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm text-center">
+        `;
+        
+        results.dp_table.forEach((row, i) => {
+            content += '<tr>';
+            row.forEach((cell, j) => {
+                content += `<td class="${i === 0 || j === 0 ? 'bg-light fw-bold' : ''}">${cell}</td>`;
+            });
+            content += '</tr>';
+        });
+        
+        content += `
+                </table>
+            </div>
+        `;
+    }
+    
+    content += `
+            </div>
+            <div class="col-md-4">
+                <h6>Visualización</h6>
+                <div style="height: 300px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center;">
+                    <span class="text-muted">Gráfico del proceso DP</span>
+                </div>
+                
+                <div class="mt-3">
+                    <h6>Análisis de Eficiencia</h6>
+                    <div class="alert alert-info">
+                        <small>
+                            <strong>Tiempo:</strong> ${results.time_complexity}<br>
+                            <strong>Espacio:</strong> ${results.space_complexity}<br>
+                            <strong>Enfoque:</strong> Programación Dinámica Bottom-Up
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('resultsContent').innerHTML = content;
+    new bootstrap.Modal(document.getElementById('resultsModal')).show();
+}
+
+function exportResults() {
+    alert('Función de exportación implementada - se descargarían los resultados en formato Excel/PDF');
+}
+
+// Inicializar el asistente de IA para problemas de programación dinámica
+let aiAssistant;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar el asistente específico para programación dinámica
+    aiAssistant = new AIOptimizationAssistant({
+        problemType: 'dynamic_programming',
+        analysisEndpoint: '/ai_analyze',
+        generateEndpoint: '/ai_generate_problem',
+        onAnalysisComplete: function(analysis) {
+            console.log('Análisis completado:', analysis);
+        },
+        onFormPopulated: function(problemData) {
+            populateDynamicProgrammingForm(problemData);
+        }
+    });
+    
+    // Agregar manejadores de eventos para IA
+    document.getElementById('aiAnalyzeBtn').addEventListener('click', function() {
+        const description = document.getElementById('aiDescription').value;
+        if (!description.trim()) {
+            alert('Por favor ingresa una descripción del problema.');
+            return;
+        }
+        aiAssistant.analyzeDescription(description);
+    });
+    
+    document.getElementById('aiGenerateBtn').addEventListener('click', function() {
+        aiAssistant.generateProblem();
+    });
+});
+
+// Función para poblar el formulario de programación dinámica con datos de IA
+function populateDynamicProgrammingForm(problemData) {
+    try {
+        const variables = problemData.variables || {};
+        const parameters = problemData.parameters || {};
+        
+        // Detectar tipo de problema basado en el análisis
+        let problemType = 'knapsack_01'; // Por defecto
+        
+        if (parameters.problem_type) {
+            problemType = parameters.problem_type;
+        } else if (variables.capacity || variables.weights) {
+            problemType = 'knapsack_01';
+        } else if (variables.sequence1 || variables.sequence2) {
+            problemType = 'lcs';
+        } else if (variables.coins || variables.amount) {
+            problemType = 'coin_change';
+        }
+        
+        // Establecer tipo de problema
+        document.getElementById('problem_type').value = problemType;
+        
+        // Trigger change event para mostrar campos específicos
+        document.getElementById('problem_type').dispatchEvent(new Event('change'));
+        
+        setTimeout(() => {
+            // Poblar parámetros específicos según el tipo de problema
+            switch(problemType) {
+                case 'knapsack_01':
+                case 'knapsack_unbounded':
+                    if (parameters.capacity) {
+                        const capacityInput = document.getElementById('knapsack_capacity');
+                        if (capacityInput) capacityInput.value = parameters.capacity;
+                    }
+                    
+                    if (parameters.items || (parameters.weights && parameters.values)) {
+                        const items = parameters.items || [];
+                        const weights = parameters.weights || [];
+                        const values = parameters.values || [];
+                        
+                        // Llenar tabla de items
+                        const itemsData = [];
+                        if (items.length > 0) {
+                            items.forEach(item => {
+                                itemsData.push({
+                                    weight: item.weight || item.w,
+                                    value: item.value || item.v,
+                                    name: item.name || ''
+                                });
+                            });
+                        } else {
+                            weights.forEach((weight, i) => {
+                                itemsData.push({
+                                    weight: weight,
+                                    value: values[i] || 0,
+                                    name: `Item ${i + 1}`
+                                });
+                            });
+                        }
+                        
+                        // Actualizar el campo items con los datos
+                        const itemsTextarea = document.getElementById('knapsack_items');
+                        if (itemsTextarea) {
+                            const itemsText = itemsData.map(item => 
+                                `${item.name || 'Item'}: peso=${item.weight}, valor=${item.value}`
+                            ).join('\n');
+                            itemsTextarea.value = itemsText;
+                        }
+                    }
+                    break;
+                    
+                case 'coin_change':
+                    if (parameters.coins) {
+                        const coinsInput = document.getElementById('coin_denominations');
+                        if (coinsInput) {
+                            coinsInput.value = parameters.coins.join(', ');
+                        }
+                    }
+                    
+                    if (parameters.amount || parameters.target_amount) {
+                        const amountInput = document.getElementById('target_amount');
+                        if (amountInput) {
+                            amountInput.value = parameters.amount || parameters.target_amount;
+                        }
+                    }
+                    break;
+                    
+                case 'lcs':
+                    if (parameters.sequence1) {
+                        const seq1Input = document.getElementById('sequence1');
+                        if (seq1Input) seq1Input.value = parameters.sequence1;
+                    }
+                    
+                    if (parameters.sequence2) {
+                        const seq2Input = document.getElementById('sequence2');
+                        if (seq2Input) seq2Input.value = parameters.sequence2;
+                    }
+                    break;
+            }
+            
+            // Poblar objetivo si existe
+            if (parameters.optimization_type) {
+                const objInput = document.getElementById('optimization_type');
+                if (objInput) objInput.value = parameters.optimization_type;
+            }
+            
+            showToast('Formulario poblado automáticamente con análisis de IA', 'success');
+        }, 800);
+        
+    } catch (error) {
+        console.error('Error al poblar el formulario:', error);
+        showToast('Error al poblar el formulario automáticamente', 'danger');
+    }
+}
+
+function showToast(message, type = 'info') {
+    // Función helper para mostrar notificaciones
+    const alertClass = type === 'success' ? 'alert-success' : 
+                      type === 'warning' ? 'alert-warning' : 
+                      type === 'danger' ? 'alert-danger' : 'alert-info';
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 5000);
+}
+</script>
+
+<!-- AI Assistant -->
+<script src="/static/js/ai-assistant.js"></script>
+{% endblock %}

@@ -1,0 +1,602 @@
+{% extends "base.html" %}
+
+{% block title %}Transporte - OptimizaPro{% endblock %}
+
+{% block content %}
+<div class="main-container fade-in-up">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-truck text-primary me-3"></i>
+                Problemas de Transporte
+            </h1>
+            <p class="lead">
+                Optimiza la distribución de productos desde múltiples orígenes hacia varios destinos,
+                minimizando costos de transporte sujeto a restricciones de oferta y demanda.
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Formulario -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        Configurar Problema de Transporte
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form id="transportForm" method="POST">
+                        <!-- Información básica -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="problemName" class="form-label">Nombre del Problema</label>
+                                <input type="text" class="form-control" id="problemName" name="problem_name" 
+                                       placeholder="Ej: Distribución Regional" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="solver" class="form-label">Método de Solución</label>
+                                <select class="form-control" id="solver" name="solver">
+                                    <option value="vogel">Método de Vogel</option>
+                                    <option value="simplex">Simplex Especializado</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Asistente de IA -->
+                        <div class="mb-4">
+                            <div class="card border-info bg-light">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-robot me-2"></i>
+                                        Asistente de IA - Generación Automática
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="aiDescription" class="form-label">
+                                            Describe tu problema de transporte en lenguaje natural:
+                                        </label>
+                                        <textarea class="form-control" id="aiDescription" rows="4"
+                                                placeholder="Ejemplo: 'Tengo 3 plantas de producción que deben abastecer a 4 centros de distribución. La planta A puede producir 100 unidades, la B 150 unidades y la C 200 unidades. Los centros necesitan 120, 80, 150 y 100 unidades respectivamente. Los costos de transporte por unidad son...'"></textarea>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-info" id="aiAnalyzeBtn">
+                                            <i class="fas fa-magic me-2"></i>Analizar con IA
+                                        </button>
+                                        <button type="button" class="btn btn-success" id="aiGenerateBtn" style="display: none;">
+                                            <i class="fas fa-cogs me-2"></i>Llenar Formulario
+                                        </button>
+                                        <div id="aiLoadingSpinner" class="spinner-border spinner-border-sm text-info ms-2" 
+                                             style="display: none;" role="status">
+                                            <span class="visually-hidden">Analizando...</span>
+                                        </div>
+                                    </div>
+                                    <div id="aiAnalysisResult" class="mt-3" style="display: none;">
+                                        <!-- Resultado del análisis aparecerá aquí -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label">Descripción del Problema</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"
+                                      placeholder="Describe el problema de distribución..."></textarea>
+                        </div>
+
+                        <!-- Dimensiones del problema -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="numOrigins" class="form-label">Número de Orígenes</label>
+                                <input type="number" class="form-control" id="numOrigins" name="num_origins" 
+                                       min="1" max="10" value="3" onchange="updateTransportTable()">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="numDestinations" class="form-label">Número de Destinos</label>
+                                <input type="number" class="form-control" id="numDestinations" name="num_destinations" 
+                                       min="1" max="10" value="3" onchange="updateTransportTable()">
+                            </div>
+                        </div>
+
+                        <!-- Tabla de transporte -->
+                        <div class="mb-4">
+                            <h5>
+                                <i class="fas fa-table me-2"></i>
+                                Matriz de Costos y Restricciones
+                            </h5>
+                            <div class="table-responsive">
+                                <table id="transportTable" class="table table-bordered">
+                                    <!-- Contenido generado dinámicamente -->
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Opciones avanzadas -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="balanceCheck" 
+                                           name="auto_balance" checked>
+                                    <label class="form-check-label" for="balanceCheck">
+                                        Balance Automático
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="visualizations" 
+                                           name="include_visualizations" checked>
+                                    <label class="form-check-label" for="visualizations">
+                                        Generar Visualizaciones
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="aiAnalysis" 
+                                           name="include_ai" checked>
+                                    <label class="form-check-label" for="aiAnalysis">
+                                        Análisis con IA
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de acción -->
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary" onclick="loadTransportExample()">
+                                <i class="fas fa-download me-2"></i>Cargar Ejemplo
+                            </button>
+                            <div>
+                                <button type="button" class="btn btn-warning me-2" onclick="validateTransportProblem()">
+                                    <i class="fas fa-check me-2"></i>Validar
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-play me-2"></i>Resolver
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Loading Spinner -->
+                    <div id="loadingSpinner" class="loading-spinner">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Resolviendo...</span>
+                            </div>
+                            <p class="mt-2">Optimizando distribución...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de ayuda -->
+        <div class="col-lg-4">
+            <div class="sidebar">
+                <h5 class="sidebar-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Información del Problema
+                </h5>
+                
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-lightbulb me-2"></i>Problema Clásico</h6>
+                    <p class="small mb-0">
+                        El problema de transporte busca minimizar el costo total de envío
+                        desde m orígenes hacia n destinos, respetando las capacidades
+                        de oferta y demanda.
+                    </p>
+                </div>
+
+                <h6>Componentes del Problema:</h6>
+                <ul class="list-unstyled small">
+                    <li><i class="fas fa-industry text-primary me-2"></i><strong>Orígenes:</strong> Plantas, almacenes, proveedores</li>
+                    <li><i class="fas fa-store text-success me-2"></i><strong>Destinos:</strong> Clientes, tiendas, centros de distribución</li>
+                    <li><i class="fas fa-dollar-sign text-warning me-2"></i><strong>Costos:</strong> Costo unitario de transporte</li>
+                    <li><i class="fas fa-box text-info me-2"></i><strong>Oferta:</strong> Capacidad disponible en cada origen</li>
+                    <li><i class="fas fa-shopping-cart text-danger me-2"></i><strong>Demanda:</strong> Requerimiento en cada destino</li>
+                </ul>
+
+                <h6>Métodos de Solución:</h6>
+                <div class="small">
+                    <p><strong>Método de Vogel:</strong> Heurística que proporciona una buena solución inicial.</p>
+                    <p><strong>Simplex Especializado:</strong> Algoritmo exacto para la solución óptima.</p>
+                </div>
+            </div>
+
+            <!-- Ejemplo visual -->
+            <div class="sidebar">
+                <h5 class="sidebar-title">
+                    <i class="fas fa-eye me-2"></i>
+                    Visualización
+                </h5>
+                <div class="text-center">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8IS0tIE9yaWdlbiAxIC0tPgogIDxyZWN0IHg9IjEwIiB5PSIyMCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjMwIiBmaWxsPSIjM2Y5OGRiIi8+CiAgPHRleHQgeD0iMzAiIHk9IjQwIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIxMiI+TzE8L3RleHQ+CiAgCiAgPCEtLSBPcmlnZW4gMiAtLT4KICA8cmVjdCB4PSIxMCIgeT0iNjAiIHdpZHRoPSI0MCIgaGVpZ2h0PSIzMCIgZmlsbD0iIzNmOThkYiIvPgogIDx0ZXh0IHg9IjMwIiB5PSI4MCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMTIiPk8yPC90ZXh0PgogIAogIDwhLS0gRGVzdGlubyAxIC0tPgogIDxyZWN0IHg9IjE1MCIgeT0iMjAiIHdpZHRoPSI0MCIgaGVpZ2h0PSIzMCIgZmlsbD0iI2U3NGMzYyIvPgogIDx0ZXh0IHg9IjE3MCIgeT0iNDAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjEyIj5EMTwvdGV4dD4KICA8IS0tIERlc3Rpbm8gMiAtLT4KICA8cmVjdCB4PSIxNTAiIHk9IjYwIiB3aWR0aD0iNDAiIGhlaWdodD0iMzAiIGZpbGw9IiNlNzRjM2MiLz4KICA8dGV4dCB4PSIxNzAiIHk9IjgwIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIxMiI+RDI8L3RleHQ+CiAgCiAgPCEtLSBGbGVjaGFzIC0tPgogIDxsaW5lIHg9IjUwIiB5PSIzNSIgeDI9IjE1MCIgeTI9IjM1IiBzdHJva2U9IiMyN2FlNjAiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxsaW5lIHg9IjUwIiB5PSI3NSIgeDI9IjE1MCIgeTI9Ijc1IiBzdHJva2U9IiMyN2FlNjAiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4=" 
+                         alt="Esquema de Transporte" class="img-fluid">
+                    <p class="small text-muted mt-2">Esquema básico de un problema de transporte</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Resultados -->
+<div class="modal fade" id="transportResultsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-truck me-2"></i>
+                    Resultados de Optimización de Transporte
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="transportResultsContent">
+                <!-- Contenido dinámico -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="exportTransportResults()">
+                    <i class="fas fa-download me-2"></i>Exportar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- AI Assistant -->
+<script src="/static/js/ai-assistant.js"></script>
+
+<script>
+// Inicializar el asistente de IA para problemas de transporte
+let aiAssistant;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar el asistente específico para transporte
+    aiAssistant = new AIOptimizationAssistant({
+        problemType: 'transportation',
+        analysisEndpoint: '/ai_analyze',
+        generateEndpoint: '/ai_generate_problem',
+        onAnalysisComplete: function(analysis) {
+            console.log('Análisis completado:', analysis);
+        },
+        onFormPopulated: function(problemData) {
+            // Poblar automáticamente el formulario de transporte
+            populateTransportationForm(problemData);
+        }
+    });
+    
+    // Agregar manejadores de eventos
+    document.getElementById('aiAnalyzeBtn').addEventListener('click', function() {
+        const description = document.getElementById('aiDescription').value;
+        if (!description.trim()) {
+            alert('Por favor ingresa una descripción del problema.');
+            return;
+        }
+        aiAssistant.analyzeDescription(description);
+    });
+    
+    document.getElementById('aiGenerateBtn').addEventListener('click', function() {
+        aiAssistant.generateProblem();
+    });
+    
+    // Inicializar tabla al cargar la página
+    updateTransportTable();
+});
+
+// Función para poblar el formulario de transporte con datos de IA
+function populateTransportationForm(problemData) {
+    try {
+        // Extraer información específica de transporte
+        const variables = problemData.variables || {};
+        const sources = variables.sources || variables.origins || [];
+        const destinations = variables.destinations || [];
+        const supply = variables.supply || variables.offers || [];
+        const demand = variables.demand || variables.requirements || [];
+        const costs = variables.costs || variables.cost_matrix || [];
+        
+        // Poblar descripción del problema
+        if (problemData.description) {
+            document.getElementById('description').value = problemData.description;
+        }
+        
+        // Poblar nombre del problema si existe
+        if (problemData.title) {
+            const nameInput = document.getElementById('problemName');
+            if (nameInput) nameInput.value = problemData.title;
+        }
+        
+        // Configurar dimensiones
+        const numSources = Math.max(sources.length, supply.length);
+        const numDestinations = Math.max(destinations.length, demand.length);
+        
+        if (numSources > 0) {
+            document.getElementById('numOrigins').value = numSources;
+        }
+        
+        if (numDestinations > 0) {
+            document.getElementById('numDestinations').value = numDestinations;
+        }
+        
+        // Actualizar tabla con nuevas dimensiones
+        updateTransportTable();
+        
+        // Esperar un momento para que se generen los inputs dinámicos
+        setTimeout(() => {
+            // Llenar capacidades de suministro
+            supply.forEach((capacity, i) => {
+                const input = document.querySelector(`input[name="supply_${i + 1}"]`);
+                if (input) input.value = capacity;
+            });
+            
+            // Llenar demandas
+            demand.forEach((dem, i) => {
+                const input = document.querySelector(`input[name="demand_${i + 1}"]`);
+                if (input) input.value = dem;
+            });
+            
+            // Llenar matriz de costos
+            costs.forEach((row, i) => {
+                if (Array.isArray(row)) {
+                    row.forEach((cost, j) => {
+                        const input = document.querySelector(`input[name="cost_${i + 1}_${j + 1}"]`);
+                        if (input) input.value = cost;
+                    });
+                }
+            });
+            
+            // Validar el problema automáticamente
+            validateTransportProblem();
+            
+            // Mostrar mensaje de éxito
+            showToast('Formulario poblado automáticamente con análisis de IA', 'success');
+            
+        }, 500);
+        
+    } catch (error) {
+        console.error('Error al poblar el formulario:', error);
+        showToast('Error al poblar el formulario automáticamente', 'danger');
+    }
+}
+
+// Resto del código existente
+function updateTransportTable() {
+    const numOrigins = parseInt(document.getElementById('numOrigins').value);
+    const numDestinations = parseInt(document.getElementById('numDestinations').value);
+    const table = document.getElementById('transportTable');
+    
+    let html = '<thead><tr><th>Origen/Destino</th>';
+    
+    // Headers de destinos
+    for (let j = 1; j <= numDestinations; j++) {
+        html += `<th>Destino ${j}</th>`;
+    }
+    html += '<th>Oferta</th></tr></thead><tbody>';
+    
+    // Filas de orígenes
+    for (let i = 1; i <= numOrigins; i++) {
+        html += `<tr><td><strong>Origen ${i}</strong></td>`;
+        for (let j = 1; j <= numDestinations; j++) {
+            html += `<td><input type="number" class="form-control form-control-sm" 
+                           name="cost_${i}_${j}" placeholder="Costo" step="any" required></td>`;
+        }
+        html += `<td><input type="number" class="form-control form-control-sm" 
+                       name="supply_${i}" placeholder="Oferta" step="any" required></td>`;
+        html += '</tr>';
+    }
+    
+    // Fila de demanda
+    html += '<tr><td><strong>Demanda</strong></td>';
+    for (let j = 1; j <= numDestinations; j++) {
+        html += `<td><input type="number" class="form-control form-control-sm" 
+                       name="demand_${j}" placeholder="Demanda" step="any" required></td>`;
+    }
+    html += '<td class="table-secondary"></td></tr>';
+    
+    html += '</tbody>';
+    table.innerHTML = html;
+}
+
+function loadTransportExample() {
+    // Configurar dimensiones
+    document.getElementById('numOrigins').value = 3;
+    document.getElementById('numDestinations').value = 4;
+    
+    // Actualizar tabla
+    updateTransportTable();
+    
+    // Llenar con datos de ejemplo
+    document.getElementById('problemName').value = 'Distribución de Productos';
+    document.getElementById('description').value = 'Optimización de la distribución de productos desde 3 plantas hacia 4 centros de distribución';
+    
+    // Costos (ejemplo)
+    const costs = [
+        [8, 6, 10, 9],
+        [9, 12, 13, 7],
+        [14, 9, 16, 5]
+    ];
+    
+    // Oferta y demanda
+    const supply = [25, 35, 40];
+    const demand = [20, 25, 25, 30];
+    
+    // Llenar costos
+    for (let i = 1; i <= 3; i++) {
+        for (let j = 1; j <= 4; j++) {
+            document.querySelector(`input[name="cost_${i}_${j}"]`).value = costs[i-1][j-1];
+        }
+        document.querySelector(`input[name="supply_${i}"]`).value = supply[i-1];
+    }
+    
+    // Llenar demanda
+    for (let j = 1; j <= 4; j++) {
+        document.querySelector(`input[name="demand_${j}"]`).value = demand[j-1];
+    }
+    
+    showToast('Ejemplo cargado exitosamente', 'success');
+}
+
+function validateTransportProblem() {
+    const numOrigins = parseInt(document.getElementById('numOrigins').value);
+    const numDestinations = parseInt(document.getElementById('numDestinations').value);
+    
+    // Calcular totales
+    let totalSupply = 0;
+    let totalDemand = 0;
+    
+    for (let i = 1; i <= numOrigins; i++) {
+        const supply = parseFloat(document.querySelector(`input[name="supply_${i}"]`).value || 0);
+        totalSupply += supply;
+    }
+    
+    for (let j = 1; j <= numDestinations; j++) {
+        const demand = parseFloat(document.querySelector(`input[name="demand_${j}"]`).value || 0);
+        totalDemand += demand;
+    }
+    
+    const difference = Math.abs(totalSupply - totalDemand);
+    
+    if (difference < 0.001) {
+        showToast(`Problema balanceado ✓ (Oferta: ${totalSupply}, Demanda: ${totalDemand})`, 'success');
+    } else {
+        const message = `Problema no balanceado. Oferta: ${totalSupply}, Demanda: ${totalDemand}, Diferencia: ${difference}`;
+        showToast(message, 'warning');
+    }
+}
+
+// Manejo del formulario
+document.getElementById('transportForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!validateForm('transportForm')) {
+        showToast('Por favor complete todos los campos requeridos', 'warning');
+        return;
+    }
+    
+    showLoading('loadingSpinner');
+    
+    // Simular procesamiento
+    setTimeout(() => {
+        hideLoading('loadingSpinner');
+        showTransportResults();
+    }, 3000);
+});
+
+function showTransportResults() {
+    // Ejemplo de resultados
+    const resultsHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Estado de la Solución</h5>
+                <span class="badge bg-success fs-6">Óptimo</span>
+                
+                <h5 class="mt-3">Costo Total Mínimo</h5>
+                <p class="h4 text-primary">$1,250.00</p>
+                
+                <h5 class="mt-3">Método Utilizado</h5>
+                <p>Método de Vogel con optimización</p>
+            </div>
+            <div class="col-md-6">
+                <h5>Estadísticas</h5>
+                <ul class="list-unstyled">
+                    <li><strong>Tiempo de solución:</strong> 0.156s</li>
+                    <li><strong>Rutas utilizadas:</strong> 6 de 12</li>
+                    <li><strong>Eficiencia:</strong> 92.5%</li>
+                </ul>
+                
+                <h5 class="mt-3">Balance</h5>
+                <p class="small text-success">
+                    ✓ Oferta total: 100 unidades<br>
+                    ✓ Demanda total: 100 unidades<br>
+                    ✓ Problema balanceado
+                </p>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <h5>Matriz de Asignaciones</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th>Origen/Destino</th>
+                            <th>D1</th>
+                            <th>D2</th>
+                            <th>D3</th>
+                            <th>D4</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>O1</strong></td>
+                            <td class="table-success">20</td>
+                            <td>0</td>
+                            <td>5</td>
+                            <td>0</td>
+                        </tr>
+                        <tr>
+                            <td><strong>O2</strong></td>
+                            <td>0</td>
+                            <td class="table-success">25</td>
+                            <td>0</td>
+                            <td class="table-success">10</td>
+                        </tr>
+                        <tr>
+                            <td><strong>O3</strong></td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td class="table-success">20</td>
+                            <td class="table-success">20</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <div id="transportChart" style="height: 400px;"></div>
+        </div>
+    `;
+    
+    document.getElementById('transportResultsContent').innerHTML = resultsHTML;
+    
+    // Crear gráfico de flujos
+    const trace = {
+        z: [[20, 0, 5, 0], [0, 25, 0, 10], [0, 0, 20, 20]],
+        x: ['D1', 'D2', 'D3', 'D4'],
+        y: ['O1', 'O2', 'O3'],
+        type: 'heatmap',
+        colorscale: 'Viridis'
+    };
+    
+    const layout = {
+        title: 'Matriz de Flujos Óptimos',
+        xaxis: { title: 'Destinos' },
+        yaxis: { title: 'Orígenes' }
+    };
+    
+    Plotly.newPlot('transportChart', [trace], layout);
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('transportResultsModal'));
+    modal.show();
+    
+    showToast('Problema de transporte resuelto exitosamente', 'success');
+}
+
+function exportTransportResults() {
+    showToast('Exportando resultados...', 'info');
+}
+
+// Inicializar tabla al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    updateTransportTable();
+});
+</script>
+{% endblock %}

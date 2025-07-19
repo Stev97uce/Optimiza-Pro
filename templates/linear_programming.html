@@ -1,0 +1,872 @@
+{% extends "base.html" %}
+
+{% block title %}Programación Lineal - OptimizaPro{% endblock %}
+
+{% block content %}
+<div class="main-container fade-in-up">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-chart-line text-primary me-3"></i>
+                Programación Lineal
+            </h1>
+            <p class="lead">
+                Resuelve problemas de optimización con restricciones lineales. Maximiza o minimiza una función objetivo
+                sujeta a un conjunto de restricciones lineales.
+            </p>
+        </div>
+    </div>
+
+    <!-- Asistente de IA -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div id="ai-assistant-container"></div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Formulario -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        Definir Problema de Programación Lineal
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form id="lpForm" method="POST">
+                        <!-- Información básica -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="problemName" class="form-label">Nombre del Problema</label>
+                                <input type="text" class="form-control" id="problemName" name="problem_name" 
+                                       placeholder="Ej: Optimización de Producción" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="objective" class="form-label">Tipo de Optimización</label>
+                                <select class="form-control" id="objective" name="objective_sense" required>
+                                    <option value="minimize">Minimizar</option>
+                                    <option value="maximize">Maximizar</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"
+                                      placeholder="Describe brevemente el problema a resolver..."></textarea>
+                        </div>
+
+                        <!-- Variables de Decisión -->
+                        <div class="mb-4">
+                            <h5>
+                                <i class="fas fa-x me-2"></i>
+                                Variables de Decisión
+                            </h5>
+                            <div id="variablesContainer">
+                                <div class="variable-row border rounded p-3 mb-3">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Nombre</label>
+                                            <input type="text" class="form-control" name="var_name[]" 
+                                                   placeholder="x1" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Coeficiente</label>
+                                            <input type="number" class="form-control" name="var_coeff[]" 
+                                                   step="any" placeholder="1" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Límite Inf.</label>
+                                            <input type="number" class="form-control" name="var_lower[]" 
+                                                   step="any" value="0">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Límite Sup.</label>
+                                            <input type="number" class="form-control" name="var_upper[]" 
+                                                   step="any" placeholder="∞">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Tipo</label>
+                                            <select class="form-control" name="var_type[]">
+                                                <option value="continuous">Continua</option>
+                                                <option value="integer">Entera</option>
+                                                <option value="binary">Binaria</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-1 d-flex align-items-end">
+                                            <button type="button" class="btn btn-danger btn-sm remove-variable" 
+                                                    onclick="removeVariable(this)">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-success" onclick="addVariable()">
+                                <i class="fas fa-plus me-2"></i>Agregar Variable
+                            </button>
+                        </div>
+
+                        <!-- Restricciones -->
+                        <div class="mb-4">
+                            <h5>
+                                <i class="fas fa-lock me-2"></i>
+                                Restricciones
+                            </h5>
+                            <div id="constraintsContainer">
+                                <div class="constraint-row border rounded p-3 mb-3">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Nombre</label>
+                                            <input type="text" class="form-control" name="const_name[]" 
+                                                   placeholder="R1" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Coeficientes (separados por coma)</label>
+                                            <input type="text" class="form-control" name="const_coeffs[]" 
+                                                   placeholder="1, 2, 3" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Operador</label>
+                                            <select class="form-control" name="const_operator[]" required>
+                                                <option value="<=">&le;</option>
+                                                <option value=">=">&ge;</option>
+                                                <option value="=">=</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Valor RHS</label>
+                                            <input type="number" class="form-control" name="const_rhs[]" 
+                                                   step="any" placeholder="100" required>
+                                        </div>
+                                        <div class="col-md-1 d-flex align-items-end">
+                                            <button type="button" class="btn btn-danger btn-sm remove-constraint" 
+                                                    onclick="removeConstraint(this)">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-success" onclick="addConstraint()">
+                                <i class="fas fa-plus me-2"></i>Agregar Restricción
+                            </button>
+                        </div>
+
+                        <!-- Opciones de Solución -->
+                        <div class="mb-4">
+                            <h5>
+                                <i class="fas fa-cogs me-2"></i>
+                                Opciones de Solución
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="solver" class="form-label">Solucionador</label>
+                                    <select class="form-control" id="solver" name="solver">
+                                        <option value="pulp">PuLP (Recomendado)</option>
+                                        <option value="scipy">SciPy</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="sensitivity" 
+                                               name="include_sensitivity" checked>
+                                        <label class="form-check-label" for="sensitivity">
+                                            Análisis de Sensibilidad
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="aiAnalysis" 
+                                               name="include_ai" checked>
+                                        <label class="form-check-label" for="aiAnalysis">
+                                            Análisis con IA
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary" onclick="loadExample()">
+                                <i class="fas fa-download me-2"></i>Cargar Ejemplo
+                            </button>
+                            <div>
+                                <button type="button" class="btn btn-warning me-2" onclick="validateProblem()">
+                                    <i class="fas fa-check me-2"></i>Validar
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-play me-2"></i>Resolver
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Loading Spinner -->
+                    <div id="loadingSpinner" class="loading-spinner">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Resolviendo...</span>
+                            </div>
+                            <p class="mt-2">Resolviendo problema, por favor espere...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Ayuda -->
+        <div class="col-lg-4">
+            <div class="sidebar">
+                <h5 class="sidebar-title">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Ayuda y Consejos
+                </h5>
+                
+                <div class="accordion" id="helpAccordion">
+                    <div class="accordion-item">
+                        <h6 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#variables-help">
+                                Variables de Decisión
+                            </button>
+                        </h6>
+                        <div id="variables-help" class="accordion-collapse collapse show" 
+                             data-bs-parent="#helpAccordion">
+                            <div class="accordion-body small">
+                                <p><strong>Nombre:</strong> Identificador único (x1, x2, etc.)</p>
+                                <p><strong>Coeficiente:</strong> Valor en la función objetivo</p>
+                                <p><strong>Límites:</strong> Rango de valores permitidos</p>
+                                <p><strong>Tipo:</strong> Continua, entera o binaria</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h6 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#constraints-help">
+                                Restricciones
+                            </button>
+                        </h6>
+                        <div id="constraints-help" class="accordion-collapse collapse" 
+                             data-bs-parent="#helpAccordion">
+                            <div class="accordion-body small">
+                                <p><strong>Nombre:</strong> Identificador de la restricción</p>
+                                <p><strong>Coeficientes:</strong> Valores separados por coma en el mismo orden que las variables</p>
+                                <p><strong>Operador:</strong> ≤, ≥, o =</p>
+                                <p><strong>RHS:</strong> Lado derecho de la ecuación</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h6 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#example-help">
+                                Ejemplo de Problema
+                            </button>
+                        </h6>
+                        <div id="example-help" class="accordion-collapse collapse" 
+                             data-bs-parent="#helpAccordion">
+                            <div class="accordion-body small">
+                                <p><strong>Maximizar:</strong> 3x₁ + 2x₂</p>
+                                <p><strong>Sujeto a:</strong></p>
+                                <ul class="mb-0">
+                                    <li>x₁ + x₂ ≤ 4</li>
+                                    <li>2x₁ + x₂ ≤ 6</li>
+                                    <li>x₁, x₂ ≥ 0</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <h6><i class="fas fa-chart-bar me-2"></i>Características</h6>
+                    <ul class="list-unstyled small">
+                        <li><i class="fas fa-check text-success me-2"></i>Variables mixtas</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Múltiples solucionadores</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Análisis de sensibilidad</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Visualización interactiva</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Exportación de resultados</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Problemas Recientes -->
+            {% if recent_problems %}
+            <div class="sidebar">
+                <h5 class="sidebar-title">
+                    <i class="fas fa-history me-2"></i>
+                    Problemas Recientes
+                </h5>
+                {% for problem in recent_problems %}
+                <div class="border rounded p-2 mb-2 small">
+                    <strong>{{ problem.name }}</strong><br>
+                    <span class="text-muted">{{ problem.date }}</span>
+                    <button class="btn btn-sm btn-outline-primary float-end" 
+                            onclick="loadProblem('{{ problem.id }}')">
+                        Cargar
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Resultados -->
+<div class="modal fade" id="resultsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Resultados de Optimización
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="resultsContent">
+                <!-- Contenido dinámico -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="exportResults()">
+                    <i class="fas fa-download me-2"></i>Exportar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let variableCount = 1;
+let constraintCount = 1;
+
+function addVariable() {
+    variableCount++;
+    const container = document.getElementById('variablesContainer');
+    const newVariable = document.createElement('div');
+    newVariable.className = 'variable-row border rounded p-3 mb-3';
+    newVariable.innerHTML = `
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label">Nombre</label>
+                <input type="text" class="form-control" name="var_name[]" 
+                       placeholder="x${variableCount}" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Coeficiente</label>
+                <input type="number" class="form-control" name="var_coeff[]" 
+                       step="any" placeholder="1" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Límite Inf.</label>
+                <input type="number" class="form-control" name="var_lower[]" 
+                       step="any" value="0">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Límite Sup.</label>
+                <input type="number" class="form-control" name="var_upper[]" 
+                       step="any" placeholder="∞">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Tipo</label>
+                <select class="form-control" name="var_type[]">
+                    <option value="continuous">Continua</option>
+                    <option value="integer">Entera</option>
+                    <option value="binary">Binaria</option>
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="button" class="btn btn-danger btn-sm remove-variable" 
+                        onclick="removeVariable(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(newVariable);
+}
+
+function removeVariable(button) {
+    const variablesContainer = document.getElementById('variablesContainer');
+    if (variablesContainer.children.length > 1) {
+        button.closest('.variable-row').remove();
+    } else {
+        showToast('Debe mantener al menos una variable', 'warning');
+    }
+}
+
+function addConstraint() {
+    constraintCount++;
+    const container = document.getElementById('constraintsContainer');
+    const newConstraint = document.createElement('div');
+    newConstraint.className = 'constraint-row border rounded p-3 mb-3';
+    newConstraint.innerHTML = `
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label">Nombre</label>
+                <input type="text" class="form-control" name="const_name[]" 
+                       placeholder="R${constraintCount}" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Coeficientes (separados por coma)</label>
+                <input type="text" class="form-control" name="const_coeffs[]" 
+                       placeholder="1, 2, 3" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Operador</label>
+                <select class="form-control" name="const_operator[]" required>
+                    <option value="<=">&le;</option>
+                    <option value=">=">&ge;</option>
+                    <option value="=">=</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Valor RHS</label>
+                <input type="number" class="form-control" name="const_rhs[]" 
+                       step="any" placeholder="100" required>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="button" class="btn btn-danger btn-sm remove-constraint" 
+                        onclick="removeConstraint(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(newConstraint);
+}
+
+function removeConstraint(button) {
+    const constraintsContainer = document.getElementById('constraintsContainer');
+    if (constraintsContainer.children.length > 1) {
+        button.closest('.constraint-row').remove();
+    } else {
+        showToast('Debe mantener al menos una restricción', 'warning');
+    }
+}
+
+function loadExample() {
+    // Cargar ejemplo de problema de FÁBRICA TEXTIL
+    document.getElementById('problemName').value = 'Optimización de Producción Textil';
+    document.getElementById('objective').value = 'maximize';  // IMPORTANTE: MAXIMIZAR
+    document.getElementById('description').value = 'Una fábrica textil produce camisas y pantalones. Maximizar ganancias con limitaciones de tela y tiempo.';
+    
+    // Limpiar variables existentes
+    const variablesContainer = document.getElementById('variablesContainer');
+    variablesContainer.innerHTML = '';
+    
+    // Agregar variables del ejemplo DE LA FÁBRICA TEXTIL
+    const variables = [
+        {name: 'x1', coeff: 40, lower: 0, upper: '', type: 'continuous'},  // 40 por camisa
+        {name: 'x2', coeff: 30, lower: 0, upper: '', type: 'continuous'}   // 30 por pantalón
+    ];
+    
+    variables.forEach((variable, index) => {
+        const variableDiv = document.createElement('div');
+        variableDiv.className = 'variable-row border rounded p-3 mb-3';
+        variableDiv.innerHTML = `
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">Nombre</label>
+                    <input type="text" class="form-control" name="var_name[]" value="${variable.name}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Coeficiente</label>
+                    <input type="number" class="form-control" name="var_coeff[]" value="${variable.coeff}" step="any" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Límite Inf.</label>
+                    <input type="number" class="form-control" name="var_lower[]" value="${variable.lower}" step="any">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Límite Sup.</label>
+                    <input type="number" class="form-control" name="var_upper[]" value="${variable.upper}" step="any">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Tipo</label>
+                    <select class="form-control" name="var_type[]">
+                        <option value="continuous" ${variable.type === 'continuous' ? 'selected' : ''}>Continua</option>
+                        <option value="integer" ${variable.type === 'integer' ? 'selected' : ''}>Entera</option>
+                        <option value="binary" ${variable.type === 'binary' ? 'selected' : ''}>Binaria</option>
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="button" class="btn btn-danger btn-sm remove-variable" onclick="removeVariable(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        variablesContainer.appendChild(variableDiv);
+    });
+    
+    // Limpiar restricciones existentes
+    const constraintsContainer = document.getElementById('constraintsContainer');
+    constraintsContainer.innerHTML = '';
+    
+    // Agregar restricciones del ejemplo DE LA FÁBRICA TEXTIL
+    const constraints = [
+        {name: 'Tela', coeffs: '2, 3', operator: '<=', rhs: 120},      // 2x1 + 3x2 <= 120
+        {name: 'Tiempo', coeffs: '1, 2', operator: '<=', rhs: 80},    // 1x1 + 2x2 <= 80
+        {name: 'DemandaMin', coeffs: '1, 0', operator: '>=', rhs: 10} // x1 >= 10
+    ];
+    
+    constraints.forEach((constraint, index) => {
+        const constraintDiv = document.createElement('div');
+        constraintDiv.className = 'constraint-row border rounded p-3 mb-3';
+        constraintDiv.innerHTML = `
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">Nombre</label>
+                    <input type="text" class="form-control" name="const_name[]" value="${constraint.name}" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Coeficientes (separados por coma)</label>
+                    <input type="text" class="form-control" name="const_coeffs[]" value="${constraint.coeffs}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Operador</label>
+                    <select class="form-control" name="const_operator[]" required>
+                        <option value="<=" ${constraint.operator === '<=' ? 'selected' : ''}>&le;</option>
+                        <option value=">=" ${constraint.operator === '>=' ? 'selected' : ''}>&ge;</option>
+                        <option value="=" ${constraint.operator === '=' ? 'selected' : ''}>=</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Valor RHS</label>
+                    <input type="number" class="form-control" name="const_rhs[]" value="${constraint.rhs}" step="any" required>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="button" class="btn btn-danger btn-sm remove-constraint" onclick="removeConstraint(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        constraintsContainer.appendChild(constraintDiv);
+    });
+    
+    showToast('Ejemplo de Fábrica Textil cargado - Debería dar x1≈30, x2≈20, objetivo≈1800', 'success');
+}
+
+function validateProblem() {
+    if (validateForm('lpForm')) {
+        showToast('El problema es válido', 'success');
+    } else {
+        showToast('Por favor complete todos los campos requeridos', 'warning');
+    }
+}
+
+// Manejo del formulario
+document.getElementById('lpForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!validateForm('lpForm')) {
+        showToast('Por favor complete todos los campos requeridos', 'warning');
+        return;
+    }
+    
+    showLoading('loadingSpinner');
+    
+    // Enviar formulario al servidor via AJAX
+    const formData = new FormData(this);
+    
+    fetch('/linear_programming', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading('loadingSpinner');
+        
+        if (data.success) {
+            showRealResults(data.solution);
+        } else {
+            showToast('Error al resolver: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        hideLoading('loadingSpinner');
+        showToast('Error de comunicación: ' + error.message, 'danger');
+        console.error('Error:', error);
+    });
+});
+
+function showRealResults(solution) {
+    // Mostrar resultados reales del servidor
+    const status = solution.status === 'optimal' ? 'Óptimo' : solution.status;
+    const statusClass = solution.status === 'optimal' ? 'success' : 'warning';
+    
+    // Generar tabla de variables
+    let variablesTable = '';
+    if (solution.variables_values) {
+        for (const [varName, value] of Object.entries(solution.variables_values)) {
+            variablesTable += `<tr><td>${varName}</td><td>${value !== null ? value.toFixed(2) : 'N/A'}</td></tr>`;
+        }
+    }
+    
+    const resultsHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Estado de la Solución</h5>
+                <span class="badge bg-${statusClass} fs-6">${status}</span>
+                
+                <h5 class="mt-3">Valor Objetivo</h5>
+                <p class="h4 text-primary">${solution.objective_value !== null ? solution.objective_value.toFixed(2) : 'N/A'}</p>
+                
+                <h5 class="mt-3">Variables de Decisión</h5>
+                <table class="table table-sm">
+                    ${variablesTable}
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5>Información del Solucionador</h5>
+                <ul class="list-unstyled">
+                    <li><strong>Solver:</strong> ${solution.solver_info?.solver_name || 'No especificado'}</li>
+                    <li><strong>Tiempo:</strong> ${solution.execution_time ? solution.execution_time.toFixed(3) + 's' : 'N/A'}</li>
+                    <li><strong>Estado:</strong> ${solution.solver_info?.solver_status || 'N/A'}</li>
+                </ul>
+                
+                <h5 class="mt-3">Análisis de Sensibilidad</h5>
+                <p class="small text-muted">
+                    ${solution.status === 'optimal' ? 
+                        'Solución óptima encontrada. Los valores de las variables representan la mejor combinación posible.' :
+                        'No se pudo encontrar una solución óptima. Revise las restricciones del problema.'
+                    }
+                </p>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <div id="lpChart" style="height: 400px;"></div>
+        </div>
+    `;
+    
+    // Usar el ID correcto del modal
+    document.getElementById('resultsContent').innerHTML = resultsHTML;
+    
+    // Mostrar modal con el ID correcto
+    const modal = new bootstrap.Modal(document.getElementById('resultsModal'));
+    modal.show();
+    
+    // Crear visualización
+    if (solution.status === 'optimal') {
+        createLPVisualization(solution);
+    }
+    
+    showToast(`Problema resuelto: ${status}`, solution.status === 'optimal' ? 'success' : 'warning');
+}
+
+function showResults() {
+    // Ejemplo de resultados
+    const resultsHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Estado de la Solución</h5>
+                <span class="badge bg-success fs-6">Óptimo</span>
+                
+                <h5 class="mt-3">Valor Objetivo</h5>
+                <p class="h4 text-primary">10.00</p>
+                
+                <h5 class="mt-3">Variables de Decisión</h5>
+                <table class="table table-sm">
+                    <tr><td>x1</td><td>2.00</td></tr>
+                    <tr><td>x2</td><td>2.00</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5>Información del Solucionador</h5>
+                <ul class="list-unstyled">
+                    <li><strong>Método:</strong> Simplex</li>
+                    <li><strong>Tiempo:</strong> 0.023s</li>
+                    <li><strong>Iteraciones:</strong> 3</li>
+                </ul>
+                
+                <h5 class="mt-3">Análisis de Sensibilidad</h5>
+                <p class="small text-muted">
+                    El análisis de sensibilidad muestra que la solución es estable
+                    ante pequeños cambios en los parámetros.
+                </p>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <div id="solutionChart" style="height: 400px;"></div>
+        </div>
+    `;
+    
+    document.getElementById('resultsContent').innerHTML = resultsHTML;
+    
+    // Crear gráfico simulado
+    const trace = {
+        x: ['x1', 'x2'],
+        y: [2.0, 2.0],
+        type: 'bar',
+        marker: { color: ['#3498db', '#e74c3c'] }
+    };
+    
+    const layout = {
+        title: 'Variables de Decisión - Solución Óptima',
+        xaxis: { title: 'Variables' },
+        yaxis: { title: 'Valores' }
+    };
+    
+    Plotly.newPlot('solutionChart', [trace], layout);
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('resultsModal'));
+    modal.show();
+    
+    showToast('Problema resuelto exitosamente', 'success');
+}
+
+function exportResults() {
+    showToast('Exportando resultados...', 'info');
+    // Aquí se implementaría la exportación real
+}
+
+// Inicializar Asistente de IA para Programación Lineal
+document.addEventListener('DOMContentLoaded', function() {
+    window.aiAssistant = new AIOptimizationAssistant('ai-assistant-container', {
+        problemType: 'linear_programming',
+        onAnalysisComplete: function(analysis) {
+            // Poblar formulario automáticamente basado en análisis IA
+            populateLinearProgrammingForm(analysis);
+        },
+        onSolutionComplete: function(solution, fullData) {
+            // Mostrar resultados en el modal existente
+            showLPResults(solution);
+        }
+    });
+});
+
+function populateLinearProgrammingForm(analysis) {
+    // Poblar información básica
+    if (analysis.objective) {
+        document.getElementById('objective').value = analysis.objective.sense;
+    }
+    
+    // Limpiar variables y restricciones existentes
+    clearVariablesTable();
+    clearConstraintsTable();
+    
+    // Agregar variables del análisis
+    analysis.variables.forEach(variable => {
+        addVariableFromAI(variable, analysis.objective.variables[variable.name] || 0);
+    });
+    
+    // Agregar restricciones del análisis
+    analysis.constraints.forEach(constraint => {
+        addConstraintFromAI(constraint);
+    });
+    
+    showToast('Formulario poblado automáticamente por la IA', 'success');
+}
+
+function addVariableFromAI(variable, coefficient) {
+    const tbody = document.querySelector('#variablesTable tbody');
+    const newRow = tbody.insertRow();
+    
+    newRow.innerHTML = `
+        <td><input type="text" class="form-control form-control-sm" name="var_name[]" value="${variable.name}" required></td>
+        <td><input type="number" class="form-control form-control-sm" name="var_coeff[]" value="${coefficient}" step="any" required></td>
+        <td><input type="number" class="form-control form-control-sm" name="var_lower[]" value="${variable.lower_bound}" step="any" required></td>
+        <td><input type="number" class="form-control form-control-sm" name="var_upper[]" value="${variable.upper_bound || ''}" step="any"></td>
+        <td>
+            <select class="form-control form-control-sm" name="var_type[]">
+                <option value="continuous" ${variable.var_type === 'continuous' ? 'selected' : ''}>Continua</option>
+                <option value="integer" ${variable.var_type === 'integer' ? 'selected' : ''}>Entera</option>
+                <option value="binary" ${variable.var_type === 'binary' ? 'selected' : ''}>Binaria</option>
+            </select>
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeVariable(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+}
+
+function addConstraintFromAI(constraint) {
+    const tbody = document.querySelector('#constraintsTable tbody');
+    const newRow = tbody.insertRow();
+    
+    // Construir expresión de la restricción
+    const expression = Object.entries(constraint.variables)
+        .map(([varName, coeff]) => `${coeff}*${varName}`)
+        .join(' + ');
+    
+    newRow.innerHTML = `
+        <td><input type="text" class="form-control form-control-sm" name="constraint_name[]" value="${constraint.name}" required></td>
+        <td><input type="text" class="form-control form-control-sm" name="constraint_expr[]" value="${expression}" required></td>
+        <td>
+            <select class="form-control form-control-sm" name="constraint_op[]">
+                <option value="<=" ${constraint.operator === '<=' ? 'selected' : ''}>&le;</option>
+                <option value=">=" ${constraint.operator === '>=' ? 'selected' : ''}>&ge;</option>
+                <option value="=" ${constraint.operator === '=' ? 'selected' : ''}>=</option>
+            </select>
+        </td>
+        <td><input type="number" class="form-control form-control-sm" name="constraint_rhs[]" value="${constraint.rhs}" step="any" required></td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeConstraint(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+}
+
+function clearVariablesTable() {
+    const tbody = document.querySelector('#variablesTable tbody');
+    tbody.innerHTML = '';
+}
+
+function clearConstraintsTable() {
+    const tbody = document.querySelector('#constraintsTable tbody');
+    tbody.innerHTML = '';
+}
+
+function createLPVisualization(solution) {
+    // Crear una visualización básica de los resultados
+    try {
+        if (typeof Plotly !== 'undefined') {
+            const variables = Object.keys(solution.variables_values || {});
+            const values = Object.values(solution.variables_values || {});
+            
+            const trace = {
+                x: variables,
+                y: values,
+                type: 'bar',
+                marker: { color: '#007bff' },
+                name: 'Valores de Variables'
+            };
+            
+            const layout = {
+                title: 'Solución Óptima - Variables de Decisión',
+                xaxis: { title: 'Variables' },
+                yaxis: { title: 'Valores' },
+                margin: { t: 40, b: 40, l: 40, r: 40 }
+            };
+            
+            Plotly.newPlot('lpChart', [trace], layout, {responsive: true});
+        } else {
+            document.getElementById('lpChart').innerHTML = '<p class="text-center text-muted">Visualización no disponible</p>';
+        }
+    } catch (error) {
+        console.error('Error creando visualización:', error);
+        document.getElementById('lpChart').innerHTML = '<p class="text-center text-danger">Error en visualización</p>';
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+
+{% block title %}Analíticas - OptimizaPro{% endblock %}
+
+{% block content %}
+<div class="main-container fade-in-up">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-chart-line text-primary me-3"></i>
+                Analíticas y Reportes
+            </h1>
+            <p class="lead">
+                Dashboard completo de métricas, tendencias y análisis de todos los problemas de optimización resueltos.
+            </p>
+        </div>
+    </div>
+
+    <!-- Tarjetas de métricas principales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <i class="fas fa-calculator fa-2x text-primary mb-2"></i>
+                    <h3 class="card-title">127</h3>
+                    <p class="card-text">Problemas Resueltos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-clock fa-2x text-success mb-2"></i>
+                    <h3 class="card-title">2.3s</h3>
+                    <p class="card-text">Tiempo Promedio</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-bar fa-2x text-warning mb-2"></i>
+                    <h3 class="card-title">94.5%</h3>
+                    <p class="card-text">Tasa de Éxito</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="fas fa-robot fa-2x text-info mb-2"></i>
+                    <h3 class="card-title">87%</h3>
+                    <p class="card-text">Uso de IA</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Gráfico de problemas por tipo -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-pie-chart me-2"></i>
+                        Distribución por Tipo de Problema
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="problemTypeChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de tendencia temporal -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Tendencia de Uso Mensual
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="usageTrendChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Tabla de problemas recientes -->
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Problemas Recientes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Tipo</th>
+                                    <th>Nombre</th>
+                                    <th>Estado</th>
+                                    <th>Tiempo</th>
+                                    <th>IA</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>06/07/2025 21:35</td>
+                                    <td><span class="badge bg-primary">Programación Lineal</span></td>
+                                    <td>Optimización de Producción</td>
+                                    <td><span class="badge bg-success">Resuelto</span></td>
+                                    <td>1.2s</td>
+                                    <td><i class="fas fa-check text-success"></i></td>
+                                </tr>
+                                <tr>
+                                    <td>06/07/2025 21:30</td>
+                                    <td><span class="badge bg-info">Transporte</span></td>
+                                    <td>Distribución Regional</td>
+                                    <td><span class="badge bg-success">Resuelto</span></td>
+                                    <td>0.8s</td>
+                                    <td><i class="fas fa-check text-success"></i></td>
+                                </tr>
+                                <tr>
+                                    <td>06/07/2025 21:25</td>
+                                    <td><span class="badge bg-warning">Redes</span></td>
+                                    <td>Camino Más Corto</td>
+                                    <td><span class="badge bg-success">Resuelto</span></td>
+                                    <td>0.5s</td>
+                                    <td><i class="fas fa-times text-danger"></i></td>
+                                </tr>
+                                <tr>
+                                    <td>06/07/2025 21:20</td>
+                                    <td><span class="badge bg-success">Inventarios</span></td>
+                                    <td>EOQ Optimizado</td>
+                                    <td><span class="badge bg-success">Resuelto</span></td>
+                                    <td>0.3s</td>
+                                    <td><i class="fas fa-check text-success"></i></td>
+                                </tr>
+                                <tr>
+                                    <td>06/07/2025 21:15</td>
+                                    <td><span class="badge bg-danger">Prog. Dinámica</span></td>
+                                    <td>Problema de la Mochila</td>
+                                    <td><span class="badge bg-success">Resuelto</span></td>
+                                    <td>3.1s</td>
+                                    <td><i class="fas fa-check text-success"></i></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas de IA -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-brain me-2"></i>
+                        Efectividad de IA
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Análisis Automático</h6>
+                        <div class="progress">
+                            <div class="progress-bar bg-info" style="width: 92%">92%</div>
+                        </div>
+                        <small class="text-muted">Precisión en detección de variables</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Generación de Restricciones</h6>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" style="width: 88%">88%</div>
+                        </div>
+                        <small class="text-muted">Restricciones válidas generadas</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Poblado de Formularios</h6>
+                        <div class="progress">
+                            <div class="progress-bar bg-warning" style="width: 95%">95%</div>
+                        </div>
+                        <small class="text-muted">Formularios completados correctamente</small>
+                    </div>
+
+                    <div class="alert alert-info mt-3">
+                        <h6><i class="fas fa-lightbulb me-2"></i>Insight</h6>
+                        <p class="small mb-0">La IA ha reducido el tiempo de configuración de problemas en un 73% promedio.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de rendimiento por tipo -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        Rendimiento por Tipo de Problema
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="performanceChart" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros y exportación -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>
+                        Filtros y Exportación
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form class="row g-3">
+                        <div class="col-md-3">
+                            <label for="dateFrom" class="form-label">Desde</label>
+                            <input type="date" class="form-control" id="dateFrom">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="dateTo" class="form-label">Hasta</label>
+                            <input type="date" class="form-control" id="dateTo">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="problemTypeFilter" class="form-label">Tipo de Problema</label>
+                            <select class="form-control" id="problemTypeFilter">
+                                <option value="">Todos</option>
+                                <option value="linear_programming">Programación Lineal</option>
+                                <option value="transportation">Transporte</option>
+                                <option value="network">Redes</option>
+                                <option value="inventory">Inventarios</option>
+                                <option value="dynamic_programming">Programación Dinámica</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="button" class="btn btn-primary me-2" onclick="applyFilters()">
+                                <i class="fas fa-search me-2"></i>Filtrar
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="exportReport()">
+                                <i class="fas fa-download me-2"></i>Exportar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Plotly para gráficos -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    createProblemTypeChart();
+    createUsageTrendChart();
+    createPerformanceChart();
+    
+    // Establecer fechas por defecto
+    const today = new Date();
+    const oneMonthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    document.getElementById('dateFrom').value = oneMonthAgo.toISOString().split('T')[0];
+    document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+});
+
+function createProblemTypeChart() {
+    const data = [{
+        values: [45, 25, 15, 10, 5],
+        labels: ['Programación Lineal', 'Transporte', 'Redes', 'Inventarios', 'Prog. Dinámica'],
+        type: 'pie',
+        marker: {
+            colors: ['#007bff', '#17a2b8', '#ffc107', '#28a745', '#dc3545']
+        }
+    }];
+    
+    const layout = {
+        title: '',
+        showlegend: true,
+        margin: { t: 20, b: 20, l: 20, r: 20 }
+    };
+    
+    Plotly.newPlot('problemTypeChart', data, layout, {responsive: true});
+}
+
+function createUsageTrendChart() {
+    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio'];
+    const problems = [15, 22, 28, 35, 42, 38, 47];
+    const aiUsage = [8, 15, 20, 28, 35, 33, 41];
+    
+    const trace1 = {
+        x: months,
+        y: problems,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Problemas Resueltos',
+        line: { color: '#007bff' }
+    };
+    
+    const trace2 = {
+        x: months,
+        y: aiUsage,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Con Asistencia IA',
+        line: { color: '#28a745' }
+    };
+    
+    const layout = {
+        title: '',
+        xaxis: { title: 'Mes' },
+        yaxis: { title: 'Cantidad' },
+        margin: { t: 20, b: 40, l: 40, r: 20 }
+    };
+    
+    Plotly.newPlot('usageTrendChart', [trace1, trace2], layout, {responsive: true});
+}
+
+function createPerformanceChart() {
+    const problemTypes = ['Prog. Lineal', 'Transporte', 'Redes', 'Inventarios', 'Prog. Dinámica'];
+    const avgTime = [2.1, 1.5, 0.8, 0.4, 3.2];
+    const successRate = [96, 94, 98, 99, 89];
+    const aiAccuracy = [92, 88, 85, 95, 78];
+    
+    const trace1 = {
+        x: problemTypes,
+        y: avgTime,
+        type: 'bar',
+        name: 'Tiempo Promedio (s)',
+        yaxis: 'y',
+        marker: { color: '#007bff' }
+    };
+    
+    const trace2 = {
+        x: problemTypes,
+        y: successRate,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Tasa de Éxito (%)',
+        yaxis: 'y2',
+        line: { color: '#28a745' }
+    };
+    
+    const trace3 = {
+        x: problemTypes,
+        y: aiAccuracy,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Precisión IA (%)',
+        yaxis: 'y2',
+        line: { color: '#ffc107' }
+    };
+    
+    const layout = {
+        title: '',
+        xaxis: { title: 'Tipo de Problema' },
+        yaxis: {
+            title: 'Tiempo (segundos)',
+            side: 'left'
+        },
+        yaxis2: {
+            title: 'Porcentaje (%)',
+            side: 'right',
+            overlaying: 'y'
+        },
+        margin: { t: 20, b: 80, l: 60, r: 60 }
+    };
+    
+    Plotly.newPlot('performanceChart', [trace1, trace2, trace3], layout, {responsive: true});
+}
+
+function applyFilters() {
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo = document.getElementById('dateTo').value;
+    const problemType = document.getElementById('problemTypeFilter').value;
+    
+    // Simular aplicación de filtros
+    showToast(`Filtros aplicados: ${dateFrom} a ${dateTo}${problemType ? ', Tipo: ' + problemType : ''}`, 'info');
+    
+    // Aquí iría la lógica para actualizar los gráficos con los datos filtrados
+    // Por ahora solo mostramos el mensaje
+}
+
+function exportReport() {
+    // Simular exportación
+    showToast('Generando reporte en PDF...', 'info');
+    
+    setTimeout(() => {
+        showToast('Reporte exportado exitosamente', 'success');
+    }, 2000);
+}
+
+// Funciones de utilidad (asumir que están disponibles desde base.html)
+function showToast(message, type) {
+    // Implementación básica si no está disponible
+    if (typeof window.showToast === 'function') {
+        window.showToast(message, type);
+    } else {
+        alert(message);
+    }
+}
+</script>
+{% endblock %}

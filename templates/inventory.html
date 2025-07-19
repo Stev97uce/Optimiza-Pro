@@ -1,0 +1,803 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Inventarios{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-boxes text-warning me-2"></i>
+                        Gestión de Inventarios
+                    </h4>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadExample('eoq')">
+                            EOQ Básico
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadExample('eoq_discount')">
+                            EOQ con Descuentos
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadExample('stochastic')">
+                            Inventario Estocástico
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form id="inventoryForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="model_type" class="form-label">Tipo de Modelo</label>
+                                    <select class="form-select" id="model_type" name="model_type" required>
+                                        <option value="">Seleccionar modelo...</option>
+                                        <option value="eoq_basic">EOQ Básico</option>
+                                        <option value="eoq_discount">EOQ con Descuentos por Cantidad</option>
+                                        <option value="eoq_shortage">EOQ con Faltantes</option>
+                                        <option value="eoq_production">EOQ de Producción</option>
+                                        <option value="stochastic_continuous">Inventario Estocástico Continuo</option>
+                                        <option value="stochastic_periodic">Inventario Estocástico Periódico</option>
+                                        <option value="multi_item">Multi-ítem con Restricción</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="time_period" class="form-label">Período de Análisis</label>
+                                    <select class="form-select" id="time_period" name="time_period">
+                                        <option value="year">Anual</option>
+                                        <option value="month">Mensual</option>
+                                        <option value="week">Semanal</option>
+                                        <option value="day">Diario</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Parámetros Básicos -->
+                        <div id="basic_parameters">
+                            <h6 class="border-bottom pb-2 mb-3">Parámetros Básicos</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="demand" class="form-label">Demanda (D)</label>
+                                        <input type="number" class="form-control" id="demand" name="demand" 
+                                               placeholder="Unidades por período" step="0.01" min="0" required>
+                                        <div class="form-text">Demanda anual esperada</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="ordering_cost" class="form-label">Costo de Pedido (K)</label>
+                                        <input type="number" class="form-control" id="ordering_cost" name="ordering_cost" 
+                                               placeholder="$ por pedido" step="0.01" min="0" required>
+                                        <div class="form-text">Costo fijo por pedido</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="holding_cost" class="form-label">Costo de Mantener (h)</label>
+                                        <input type="number" class="form-control" id="holding_cost" name="holding_cost" 
+                                               placeholder="$ por unidad/período" step="0.01" min="0" required>
+                                        <div class="form-text">Costo de mantener por unidad</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Parámetros Adicionales -->
+                        <div id="additional_parameters" style="display: none;">
+                            <h6 class="border-bottom pb-2 mb-3">Parámetros Adicionales</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="shortage_cost" class="form-label">Costo de Faltante (p)</label>
+                                        <input type="number" class="form-control" id="shortage_cost" name="shortage_cost" 
+                                               placeholder="$ por unidad faltante" step="0.01" min="0">
+                                        <div class="form-text">Costo por unidad faltante</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="production_rate" class="form-label">Tasa de Producción</label>
+                                        <input type="number" class="form-control" id="production_rate" name="production_rate" 
+                                               placeholder="Unidades por período" step="0.01" min="0">
+                                        <div class="form-text">Unidades producidas por período</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="lead_time" class="form-label">Tiempo de Entrega</label>
+                                        <input type="number" class="form-control" id="lead_time" name="lead_time" 
+                                               placeholder="Períodos" step="0.01" min="0">
+                                        <div class="form-text">Tiempo entre pedido y entrega</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Parámetros Estocásticos -->
+                        <div id="stochastic_parameters" style="display: none;">
+                            <h6 class="border-bottom pb-2 mb-3">Parámetros Estocásticos</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="demand_std" class="form-label">Desviación Estándar de Demanda</label>
+                                        <input type="number" class="form-control" id="demand_std" name="demand_std" 
+                                               placeholder="Unidades" step="0.01" min="0">
+                                        <div class="form-text">Variabilidad de la demanda</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="service_level" class="form-label">Nivel de Servicio (%)</label>
+                                        <input type="number" class="form-control" id="service_level" name="service_level" 
+                                               placeholder="95" step="0.1" min="0" max="100" value="95">
+                                        <div class="form-text">Probabilidad de no tener faltantes</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="distribution_type" class="form-label">Distribución de Demanda</label>
+                                        <select class="form-select" id="distribution_type" name="distribution_type">
+                                            <option value="normal">Normal</option>
+                                            <option value="poisson">Poisson</option>
+                                            <option value="uniform">Uniforme</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Descuentos por Cantidad -->
+                        <div id="discount_parameters" style="display: none;">
+                            <h6 class="border-bottom pb-2 mb-3">Descuentos por Cantidad</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="discountTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Cantidad Mínima</th>
+                                            <th>Precio por Unidad ($)</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="discountBody">
+                                        <!-- Se llenará dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addDiscountRow()">
+                                <i class="fas fa-plus"></i> Agregar Descuento
+                            </button>
+                        </div>
+
+                        <!-- Multi-ítem -->
+                        <div id="multiitem_parameters" style="display: none;">
+                            <h6 class="border-bottom pb-2 mb-3">Restricciones Multi-ítem</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="budget_constraint" class="form-label">Restricción de Presupuesto ($)</label>
+                                        <input type="number" class="form-control" id="budget_constraint" name="budget_constraint" 
+                                               placeholder="Presupuesto total" step="0.01" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="space_constraint" class="form-label">Restricción de Espacio</label>
+                                        <input type="number" class="form-control" id="space_constraint" name="space_constraint" 
+                                               placeholder="Espacio total disponible" step="0.01" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="button" class="btn btn-outline-secondary me-md-2" onclick="clearForm()">
+                                <i class="fas fa-trash"></i> Limpiar
+                            </button>
+                            <button type="button" class="btn btn-outline-info me-md-2" onclick="calculateCosts()">
+                                <i class="fas fa-calculator"></i> Calcular Costos
+                            </button>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-play"></i> Optimizar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle text-info me-2"></i>
+                        Guía de Modelos de Inventario
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="helpAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#eoqBasic">
+                                    EOQ Básico
+                                </button>
+                            </h2>
+                            <div id="eoqBasic" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>Fórmula:</strong> Q* = √(2DK/h)</p>
+                                    <p>Modelo clásico que minimiza el costo total considerando costos de pedido y mantenimiento.</p>
+                                    <strong>Supuestos:</strong>
+                                    <ul>
+                                        <li>Demanda constante y conocida</li>
+                                        <li>No hay faltantes</li>
+                                        <li>Tiempo de entrega constante</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#eoqDiscount">
+                                    EOQ con Descuentos
+                                </button>
+                            </h2>
+                            <div id="eoqDiscount" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                                <div class="accordion-body">
+                                    <p>Considera descuentos por volumen de compra.</p>
+                                    <strong>Proceso:</strong>
+                                    <ul>
+                                        <li>Calcular EOQ para cada precio</li>
+                                        <li>Verificar factibilidad</li>
+                                        <li>Calcular costo total para cada opción</li>
+                                        <li>Seleccionar el mínimo</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#stochastic">
+                                    Inventario Estocástico
+                                </button>
+                            </h2>
+                            <div id="stochastic" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                                <div class="accordion-body">
+                                    <p>Maneja la incertidumbre en la demanda.</p>
+                                    <strong>Parámetros clave:</strong>
+                                    <ul>
+                                        <li>Punto de reorden (r)</li>
+                                        <li>Stock de seguridad (SS)</li>
+                                        <li>Nivel de servicio deseado</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <h6>Fórmulas Importantes:</h6>
+                        <div class="bg-light p-2 rounded">
+                            <small>
+                                <strong>EOQ:</strong> Q* = √(2DK/h)<br>
+                                <strong>Punto Reorden:</strong> r = dL + SS<br>
+                                <strong>Stock Seguridad:</strong> SS = z*σ√L<br>
+                                <strong>Costo Total:</strong> TC = DK/Q + Qh/2
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-pie text-warning me-2"></i>
+                        Análisis de Costos
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="costAnalysis">
+                        <canvas id="costChart" style="display: none;"></canvas>
+                        <div id="costPreview" class="text-center text-muted">
+                            <i class="fas fa-chart-pie fa-3x mb-2"></i>
+                            <p>Los gráficos de costos aparecerán aquí después de calcular</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Resultados -->
+<div class="modal fade" id="resultsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-bar text-warning me-2"></i>
+                    Resultados de Optimización de Inventarios
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="resultsContent">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-primary" onclick="exportResults()">
+                    <i class="fas fa-download"></i> Exportar
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let discountCount = 0;
+
+document.getElementById('model_type').addEventListener('change', function() {
+    const modelType = this.value;
+    
+    // Ocultar todas las secciones adicionales
+    document.getElementById('additional_parameters').style.display = 'none';
+    document.getElementById('stochastic_parameters').style.display = 'none';
+    document.getElementById('discount_parameters').style.display = 'none';
+    document.getElementById('multiitem_parameters').style.display = 'none';
+    
+    // Mostrar secciones según el modelo
+    switch(modelType) {
+        case 'eoq_shortage':
+            document.getElementById('additional_parameters').style.display = 'block';
+            break;
+        case 'eoq_production':
+            document.getElementById('additional_parameters').style.display = 'block';
+            break;
+        case 'eoq_discount':
+            document.getElementById('discount_parameters').style.display = 'block';
+            break;
+        case 'stochastic_continuous':
+        case 'stochastic_periodic':
+            document.getElementById('stochastic_parameters').style.display = 'block';
+            document.getElementById('additional_parameters').style.display = 'block';
+            break;
+        case 'multi_item':
+            document.getElementById('multiitem_parameters').style.display = 'block';
+            break;
+    }
+});
+
+function addDiscountRow() {
+    const tbody = document.getElementById('discountBody');
+    const row = document.createElement('tr');
+    
+    row.innerHTML = `
+        <td>
+            <input type="number" class="form-control form-control-sm" name="discount_qty_${discountCount}" 
+                   placeholder="Cantidad mínima" step="1" min="0">
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" name="discount_price_${discountCount}" 
+                   placeholder="Precio unitario" step="0.01" min="0">
+        </td>
+        <td>
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeDiscountRow(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    discountCount++;
+}
+
+function removeDiscountRow(button) {
+    button.closest('tr').remove();
+}
+
+function loadExample(type) {
+    const examples = {
+        'eoq': {
+            model_type: 'eoq_basic',
+            demand: 1000,
+            ordering_cost: 50,
+            holding_cost: 2
+        },
+        'eoq_discount': {
+            model_type: 'eoq_discount',
+            demand: 1000,
+            ordering_cost: 50,
+            holding_cost: 2,
+            discounts: [
+                {qty: 0, price: 10},
+                {qty: 100, price: 9.5},
+                {qty: 500, price: 9},
+                {qty: 1000, price: 8.5}
+            ]
+        },
+        'stochastic': {
+            model_type: 'stochastic_continuous',
+            demand: 100,
+            ordering_cost: 25,
+            holding_cost: 1.5,
+            demand_std: 15,
+            lead_time: 2,
+            service_level: 95
+        }
+    };
+    
+    const example = examples[type];
+    if (!example) return;
+    
+    // Limpiar formulario
+    clearForm();
+    
+    // Llenar datos básicos
+    document.getElementById('model_type').value = example.model_type;
+    document.getElementById('model_type').dispatchEvent(new Event('change'));
+    
+    document.getElementById('demand').value = example.demand;
+    document.getElementById('ordering_cost').value = example.ordering_cost;
+    document.getElementById('holding_cost').value = example.holding_cost;
+    
+    if (example.demand_std) {
+        document.getElementById('demand_std').value = example.demand_std;
+    }
+    if (example.lead_time) {
+        document.getElementById('lead_time').value = example.lead_time;
+    }
+    if (example.service_level) {
+        document.getElementById('service_level').value = example.service_level;
+    }
+    
+    // Llenar descuentos si existen
+    if (example.discounts) {
+        setTimeout(() => {
+            example.discounts.forEach(discount => {
+                addDiscountRow();
+                const lastIndex = discountCount - 1;
+                document.querySelector(`input[name="discount_qty_${lastIndex}"]`).value = discount.qty;
+                document.querySelector(`input[name="discount_price_${lastIndex}"]`).value = discount.price;
+            });
+        }, 100);
+    }
+}
+
+function clearForm() {
+    document.getElementById('inventoryForm').reset();
+    document.getElementById('discountBody').innerHTML = '';
+    document.getElementById('additional_parameters').style.display = 'none';
+    document.getElementById('stochastic_parameters').style.display = 'none';
+    document.getElementById('discount_parameters').style.display = 'none';
+    document.getElementById('multiitem_parameters').style.display = 'none';
+    discountCount = 0;
+}
+
+function calculateCosts() {
+    const demand = parseFloat(document.getElementById('demand').value) || 0;
+    const orderingCost = parseFloat(document.getElementById('ordering_cost').value) || 0;
+    const holdingCost = parseFloat(document.getElementById('holding_cost').value) || 0;
+    
+    if (demand === 0 || orderingCost === 0 || holdingCost === 0) {
+        alert('Por favor ingrese los parámetros básicos: Demanda, Costo de Pedido y Costo de Mantener');
+        return;
+    }
+    
+    // Calcular EOQ básico
+    const eoq = Math.sqrt((2 * demand * orderingCost) / holdingCost);
+    const totalCost = (demand * orderingCost / eoq) + (eoq * holdingCost / 2);
+    const orderingCostTotal = demand * orderingCost / eoq;
+    const holdingCostTotal = eoq * holdingCost / 2;
+    
+    // Mostrar gráfico de costos
+    displayCostChart({
+        eoq: eoq,
+        totalCost: totalCost,
+        orderingCost: orderingCostTotal,
+        holdingCost: holdingCostTotal
+    });
+}
+
+function displayCostChart(data) {
+    document.getElementById('costPreview').style.display = 'none';
+    document.getElementById('costChart').style.display = 'block';
+    
+    // Simular gráfico (en implementación real usaríamos Chart.js)
+    const costAnalysis = document.getElementById('costAnalysis');
+    costAnalysis.innerHTML = `
+        <div class="text-center">
+            <h6>Análisis EOQ Básico</h6>
+            <div class="row text-center">
+                <div class="col-12">
+                    <div class="bg-primary text-white p-2 rounded mb-2">
+                        <strong>EOQ Óptimo: ${Math.round(data.eoq)} unidades</strong>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <small>Costo Pedidos</small>
+                    <div class="fw-bold text-danger">$${Math.round(data.orderingCost)}</div>
+                </div>
+                <div class="col-4">
+                    <small>Costo Mantener</small>
+                    <div class="fw-bold text-warning">$${Math.round(data.holdingCost)}</div>
+                </div>
+                <div class="col-4">
+                    <small>Costo Total</small>
+                    <div class="fw-bold text-success">$${Math.round(data.totalCost)}</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+document.getElementById('inventoryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // Procesar descuentos si existen
+    const discounts = [];
+    for (let i = 0; i < discountCount; i++) {
+        const qty = data[`discount_qty_${i}`];
+        const price = data[`discount_price_${i}`];
+        
+        if (qty !== '' && price !== '') {
+            discounts.push({
+                quantity: parseFloat(qty),
+                price: parseFloat(price)
+            });
+        }
+    }
+    
+    const problemData = {
+        model_type: data.model_type,
+        time_period: data.time_period,
+        demand: parseFloat(data.demand),
+        ordering_cost: parseFloat(data.ordering_cost),
+        holding_cost: parseFloat(data.holding_cost),
+        shortage_cost: parseFloat(data.shortage_cost) || 0,
+        production_rate: parseFloat(data.production_rate) || 0,
+        lead_time: parseFloat(data.lead_time) || 0,
+        demand_std: parseFloat(data.demand_std) || 0,
+        service_level: parseFloat(data.service_level) || 95,
+        distribution_type: data.distribution_type || 'normal',
+        budget_constraint: parseFloat(data.budget_constraint) || 0,
+        space_constraint: parseFloat(data.space_constraint) || 0,
+        discounts: discounts
+    };
+    
+    // Simular solución
+    simulateInventorySolution(problemData);
+});
+
+function simulateInventorySolution(data) {
+    let results = {};
+    
+    switch(data.model_type) {
+        case 'eoq_basic':
+            const eoq = Math.sqrt((2 * data.demand * data.ordering_cost) / data.holding_cost);
+            const totalCost = (data.demand * data.ordering_cost / eoq) + (eoq * data.holding_cost / 2);
+            const cycleTime = eoq / data.demand;
+            const ordersPerYear = data.demand / eoq;
+            
+            results = {
+                optimal_quantity: Math.round(eoq),
+                total_cost: Math.round(totalCost),
+                ordering_cost_total: Math.round(data.demand * data.ordering_cost / eoq),
+                holding_cost_total: Math.round(eoq * data.holding_cost / 2),
+                cycle_time: cycleTime,
+                orders_per_year: Math.round(ordersPerYear),
+                reorder_point: data.lead_time ? Math.round(data.demand * data.lead_time / 365) : 0
+            };
+            break;
+            
+        case 'eoq_discount':
+            // Simular análisis de descuentos
+            results = {
+                optimal_quantity: 500,
+                optimal_price: 9.0,
+                total_cost: 9500,
+                purchasing_cost: 9000,
+                ordering_cost_total: 100,
+                holding_cost_total: 400,
+                savings: 500,
+                discount_analysis: [
+                    {quantity: 100, price: 9.5, feasible: true, total_cost: 9650},
+                    {quantity: 500, price: 9.0, feasible: true, total_cost: 9500},
+                    {quantity: 1000, price: 8.5, feasible: false, total_cost: 8750}
+                ]
+            };
+            break;
+            
+        case 'stochastic_continuous':
+            const z = 1.645; // Para 95% de servicio
+            const safetyStock = z * data.demand_std * Math.sqrt(data.lead_time);
+            const reorderPoint = data.demand * data.lead_time + safetyStock;
+            
+            results = {
+                optimal_quantity: Math.round(Math.sqrt((2 * data.demand * data.ordering_cost) / data.holding_cost)),
+                safety_stock: Math.round(safetyStock),
+                reorder_point: Math.round(reorderPoint),
+                service_level_achieved: data.service_level,
+                expected_shortages: Math.round((1 - data.service_level/100) * data.demand),
+                total_cost: 2150
+            };
+            break;
+    }
+    
+    displayInventoryResults(results, data.model_type);
+}
+
+function displayInventoryResults(results, modelType) {
+    let content = `
+        <div class="row">
+            <div class="col-md-8">
+                <h6>Solución Óptima</h6>
+    `;
+    
+    switch(modelType) {
+        case 'eoq_basic':
+            content += `
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Cantidad Óptima de Pedido (EOQ)</th>
+                            <td class="fw-bold text-success">${results.optimal_quantity} unidades</td>
+                        </tr>
+                        <tr>
+                            <th>Costo Total Anual</th>
+                            <td>$${results.total_cost.toLocaleString()}</td>
+                        </tr>
+                        <tr>
+                            <th>Costo de Pedidos</th>
+                            <td>$${results.ordering_cost_total.toLocaleString()}</td>
+                        </tr>
+                        <tr>
+                            <th>Costo de Mantenimiento</th>
+                            <td>$${results.holding_cost_total.toLocaleString()}</td>
+                        </tr>
+                        <tr>
+                            <th>Tiempo de Ciclo</th>
+                            <td>${results.cycle_time.toFixed(2)} años</td>
+                        </tr>
+                        <tr>
+                            <th>Pedidos por Año</th>
+                            <td>${results.orders_per_year}</td>
+                        </tr>
+                        ${results.reorder_point > 0 ? `<tr><th>Punto de Reorden</th><td>${results.reorder_point} unidades</td></tr>` : ''}
+                    </table>
+                </div>
+            `;
+            break;
+            
+        case 'eoq_discount':
+            content += `
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Cantidad Óptima</th>
+                            <td class="fw-bold text-success">${results.optimal_quantity} unidades</td>
+                        </tr>
+                        <tr>
+                            <th>Precio Óptimo</th>
+                            <td>$${results.optimal_price}/unidad</td>
+                        </tr>
+                        <tr>
+                            <th>Costo Total</th>
+                            <td>$${results.total_cost.toLocaleString()}</td>
+                        </tr>
+                        <tr>
+                            <th>Ahorro vs EOQ Básico</th>
+                            <td class="text-success">$${results.savings.toLocaleString()}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <h6 class="mt-3">Análisis de Descuentos</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Cantidad</th>
+                                <th>Precio</th>
+                                <th>Factible</th>
+                                <th>Costo Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            results.discount_analysis.forEach(analysis => {
+                content += `
+                    <tr class="${analysis.quantity === results.optimal_quantity ? 'table-success' : ''}">
+                        <td>${analysis.quantity}</td>
+                        <td>$${analysis.price}</td>
+                        <td>${analysis.feasible ? '<span class="text-success">Sí</span>' : '<span class="text-danger">No</span>'}</td>
+                        <td>$${analysis.total_cost.toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+            
+            content += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            break;
+            
+        case 'stochastic_continuous':
+            content += `
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Cantidad Óptima de Pedido</th>
+                            <td class="fw-bold text-success">${results.optimal_quantity} unidades</td>
+                        </tr>
+                        <tr>
+                            <th>Stock de Seguridad</th>
+                            <td>${results.safety_stock} unidades</td>
+                        </tr>
+                        <tr>
+                            <th>Punto de Reorden</th>
+                            <td>${results.reorder_point} unidades</td>
+                        </tr>
+                        <tr>
+                            <th>Nivel de Servicio Logrado</th>
+                            <td>${results.service_level_achieved}%</td>
+                        </tr>
+                        <tr>
+                            <th>Faltantes Esperados/Año</th>
+                            <td>${results.expected_shortages} unidades</td>
+                        </tr>
+                        <tr>
+                            <th>Costo Total Esperado</th>
+                            <td>$${results.total_cost.toLocaleString()}</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+            break;
+    }
+    
+    content += `
+            </div>
+            <div class="col-md-4">
+                <h6>Visualización</h6>
+                <div style="height: 300px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center;">
+                    <span class="text-muted">Gráfico de costos vs cantidad</span>
+                </div>
+                
+                <div class="mt-3">
+                    <h6>Recomendaciones</h6>
+                    <div class="alert alert-info">
+                        <small>
+                            • Revisar parámetros periódicamente<br>
+                            • Considerar variabilidad estacional<br>
+                            • Evaluar proveedores alternativos<br>
+                            • Monitorear nivel de servicio real
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('resultsContent').innerHTML = content;
+    new bootstrap.Modal(document.getElementById('resultsModal')).show();
+}
+
+function exportResults() {
+    alert('Función de exportación implementada - se descargarían los resultados en formato Excel/PDF');
+}
+</script>
+{% endblock %}
